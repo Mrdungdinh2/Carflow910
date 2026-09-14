@@ -1,0 +1,237 @@
+@import "tailwindcss";
+
+/* ========================================
+   CarFlow910 — VietinBank Premium Design System
+   Theme: VietinBank Premium Mobile iPay Dark Mode
+   Rose Gold / Copper Accents + Metallic Midnight Glass
+   ======================================== */
+
+@layer base {
+  :root {
+    --aurora-blue: #080c16;
+    --aurora-indigo: #111827;
+    --aurora-cyan: #0284c7;
+    --rose-gold: #f4c3af;
+    --rose-gold-dark: #d49575;
+    --glass-bg: rgba(18, 25, 41, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-hover: rgba(255, 255, 255, 0.12);
+    --bottom-nav-height: 4.5rem;
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    min-height: 100%;
+  }
+
+  body {
+    background: #090d16;
+    color: white;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(244, 195, 175, 0.2);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(244, 195, 175, 0.4);
+  }
+
+  ::selection {
+    background: rgba(244, 195, 175, 0.3);
+    color: white;
+  }
+}
+
+/* ---- Glass Input Fields ---- */
+.glass-input {
+  width: 100%;
+  padding: 0.85rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 48px;
+  font-size: 15px;
+  outline: none;
+}
+
+.glass-input::placeholder {
+  color: #64748b;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(244, 195, 175, 0.6);
+  box-shadow: 0 0 20px rgba(244, 195, 175, 0.15);
+}
+
+.glass-select {
+  width: 100%;
+  padding: 0.85rem 2.5rem 0.85rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: all 0.25s ease;
+  min-height: 48px;
+  font-size: 15px;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f4c3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.glass-select:focus {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(244, 195, 175, 0.6);
+  box-shadow: 0 0 20px rgba(244, 195, 175, 0.15);
+}
+
+.glass-select option {
+  background: #0f172a;
+  color: white;
+}
+
+/* ---- Metallic Buttons ---- */
+.btn-primary {
+  padding: 0.85rem 1.75rem;
+  border-radius: 1rem;
+  font-weight: 600;
+  color: #111827;
+  background: linear-gradient(135deg, #fce7f3 0%, #f4c3af 50%, #e0a98b 100%);
+  box-shadow: 0 10px 25px -5px rgba(244, 195, 175, 0.3);
+  transition: all 0.25s ease;
+  min-height: 48px;
+  border: none;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #fcd5c5 50%, #eab397 100%);
+  box-shadow: 0 12px 28px -4px rgba(244, 195, 175, 0.4);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  padding: 0.85rem 1.75rem;
+  border-radius: 1rem;
+  font-weight: 600;
+  color: #f4c3af;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(244, 195, 175, 0.25);
+  transition: all 0.25s ease;
+  min-height: 48px;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  background: rgba(244, 195, 175, 0.1);
+  border-color: rgba(244, 195, 175, 0.4);
+}
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+.btn-danger {
+  padding: 0.85rem 1.75rem;
+  border-radius: 1rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #ef4444, #be123c);
+  box-shadow: 0 10px 20px -3px rgba(239, 68, 68, 0.3);
+  transition: all 0.25s ease;
+  min-height: 48px;
+  border: none;
+  cursor: pointer;
+}
+.btn-danger:hover {
+  background: linear-gradient(135deg, #f87171, #e11d48);
+}
+.btn-danger:active {
+  transform: scale(0.98);
+}
+
+/* Page Layout */
+.page-container {
+  padding: 1.25rem 1rem 6.5rem 1rem;
+  max-width: 32rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 640px) {
+  .page-container {
+    padding-top: 1.75rem;
+    padding-bottom: 6.5rem;
+    max-width: 42rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-container {
+    max-width: 56rem;
+  }
+}
+
+/* Premium Card Base */
+.premium-card {
+  background: rgba(18, 25, 41, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.premium-card:hover {
+  border-color: rgba(244, 195, 175, 0.25);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(244, 195, 175, 0.05);
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
