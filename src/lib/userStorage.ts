@@ -2,26 +2,22 @@
 
 import { User } from './types';
 import { SEED_USERS } from './constants';
-import { pushUserToSupabase } from './supabaseStorage';
+import { pushUserToSupabase, deleteUserFromSupabase } from './supabaseStorage';
 
 const USERS_KEY = 'carflow_users';
 
 const DEMO_DRIVER_NAMES = ['Nguyễn Văn Tâm', 'Trần Minh Đức', 'Lê Hoàng Phúc', 'Phạm Quốc Bảo'];
 
-export function seedUsers(): void {
+/**
+ * Seed users ONLY if localStorage is completely empty AND no Supabase data exists.
+ * This is called lazily, not on module import.
+ */
+export function seedUsersIfEmpty(): void {
   if (typeof window === 'undefined') return;
   const raw = localStorage.getItem(USERS_KEY);
-  if (!raw || JSON.parse(raw).length === 0) {
+  if (!raw || raw === '[]') {
+    // Only seed if truly empty - Supabase sync will overwrite this shortly
     localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
-  } else {
-    // Clean out demo drivers from existing storage
-    try {
-      const parsed: User[] = JSON.parse(raw);
-      const cleaned = parsed.filter(u => !DEMO_DRIVER_NAMES.includes(u.name));
-      if (cleaned.length !== parsed.length) {
-        localStorage.setItem(USERS_KEY, JSON.stringify(cleaned));
-      }
-    } catch {}
   }
 }
 
@@ -36,6 +32,8 @@ export function getUsers(): User[] {
       return SEED_USERS;
     }
   }
+  // If no localStorage data at all, seed and return
+  seedUsersIfEmpty();
   return SEED_USERS;
 }
 
@@ -64,15 +62,15 @@ export function saveUser(user: User): void {
   }
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
   pushUserToSupabase(users[index !== -1 ? index : users.length - 1]);
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }
 
 export function deleteUser(idOrUsername: string): void {
   if (typeof window === 'undefined') return;
   const users = getUsers();
+  const target = users.find(u => u.id === idOrUsername || u.username === idOrUsername);
   const filtered = users.filter(u => u.id !== idOrUsername && u.username !== idOrUsername);
   localStorage.setItem(USERS_KEY, JSON.stringify(filtered));
-}
-
-if (typeof window !== 'undefined') {
-  seedUsers();
+  if (target) deleteUserFromSupabase(target.id);
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }

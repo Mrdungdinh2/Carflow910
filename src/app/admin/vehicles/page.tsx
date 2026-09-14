@@ -5,6 +5,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { getVehicles, saveVehicle, deleteVehicle } from '@/lib/vehicleStorage';
 import type { Vehicle, VehicleStatus } from '@/lib/types';
 import { useAuth } from '@/lib/AuthContext';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useToast } from '@/components/Toast';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Pencil, Trash2, Plus, Search, Car, ArrowLeft, Gauge, Activity } from 'lucide-react';
@@ -35,6 +36,8 @@ export default function VehiclesAdmin() {
   useEffect(() => {
     refreshData();
   }, []);
+
+  useSupabaseSync(refreshData);
 
   const filteredVehicles = useMemo(() => {
     if (!searchQuery.trim()) return vehicles;

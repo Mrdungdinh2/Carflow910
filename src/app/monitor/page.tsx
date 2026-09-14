@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Activity, Car, Clock, ShieldAlert, History } from 'lucide-react';
@@ -31,6 +32,12 @@ export default function MonitorPage() {
     setLogs(getActivityLogs(10));
     setRequests(getRequests());
   }, [user, router]);
+
+  useSupabaseSync(() => {
+    setStats(getFleetStats());
+    setLogs(getActivityLogs(10));
+    setRequests(getRequests());
+  });
 
   if (!user || !['tcth', 'director'].includes(user.role)) return null;
 

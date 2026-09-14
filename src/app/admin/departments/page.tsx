@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { GlassCard } from '@/components/GlassCard';
 import { getDepartments, addDepartment, updateDepartment, deleteDepartment } from '@/lib/departmentStorage';
 import { useAuth } from '@/lib/AuthContext';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useToast } from '@/components/Toast';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Pencil, Trash2, Plus, Search, Building, ArrowLeft } from 'lucide-react';
@@ -27,6 +28,8 @@ export default function DepartmentsAdmin() {
   useEffect(() => {
     refreshData();
   }, []);
+
+  useSupabaseSync(refreshData);
 
   const filteredDepartments = useMemo(() => {
     if (!searchQuery.trim()) return departments;

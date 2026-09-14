@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Car, Users, ArrowLeft, Send, PlusCircle } from 'lucide-react';
@@ -51,6 +52,8 @@ export default function FleetPage() {
     }
     refreshData();
   }, [user, router]);
+
+  useSupabaseSync(refreshData);
 
   if (!user) return null;
 

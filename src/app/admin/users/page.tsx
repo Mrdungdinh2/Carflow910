@@ -6,6 +6,7 @@ import { getUsers, saveUser, deleteUser } from '@/lib/userStorage';
 import type { User, UserRole } from '@/lib/types';
 import { getDepartments } from '@/lib/departmentStorage';
 import { useAuth } from '@/lib/AuthContext';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useToast } from '@/components/Toast';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Pencil, Trash2, Plus, Search, Shield, User as UserIcon, Lock, ArrowLeft } from 'lucide-react';
@@ -39,6 +40,8 @@ export default function UsersAdmin() {
   useEffect(() => {
     refreshData();
   }, []);
+
+  useSupabaseSync(refreshData);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return users;

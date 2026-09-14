@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { ROLE_CONFIG } from '@/lib/constants';
 import type { VehicleRequest, DashboardStats as DashboardStatsType } from '@/lib/types';
 import { LogoutModal } from '@/components/LogoutModal';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
@@ -26,6 +27,10 @@ export default function DashboardPage() {
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [showKmModal, setShowKmModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+
+  useSupabaseSync(() => {
+    setAllRequests(getRequests());
+  });
 
   useEffect(() => {
     setMounted(true);

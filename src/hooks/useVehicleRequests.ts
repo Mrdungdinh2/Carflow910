@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getRequests, deleteRequest as deleteReq } from '@/lib/storage';
 import type { VehicleRequest, DashboardStats } from '@/lib/types';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 
 export function useVehicleRequests() {
   const [requests, setRequests] = useState<VehicleRequest[]>([]);
@@ -19,6 +20,9 @@ export function useVehicleRequests() {
       completed: allRequests.filter(r => r.status === 'completed').length,
     });
   }, []);
+
+  // Listen for Supabase sync events + cross-tab storage changes
+  useSupabaseSync(refresh);
 
   useEffect(() => {
     refresh();

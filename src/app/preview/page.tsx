@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, FileText, FileSpreadsheet, Pencil, Loader2, PlayCircle, CheckCircle2 } from 'lucide-react';
 import PreviewDocument from '@/components/PreviewDocument';
@@ -56,6 +57,8 @@ function PreviewContent() {
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useSupabaseSync(refreshRequest);
 
   if (loading) {
     return (

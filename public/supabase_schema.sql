@@ -91,7 +91,11 @@ create table activity_logs (
   created_at timestamptz default now()
 );
 
--- 8. ENABLE ROW LEVEL SECURITY (RLS) & FULL ACCESS POLICIES
+-- ========================================================
+-- 8. ENABLE ROW LEVEL SECURITY (RLS)
+-- CRITICAL: Policies must allow BOTH 'anon' and 'authenticated' roles
+-- CarFlow uses anon key (no Supabase Auth), so anon role MUST have full access
+-- ========================================================
 alter table users enable row level security;
 alter table vehicles enable row level security;
 alter table drivers enable row level security;
@@ -99,12 +103,15 @@ alter table departments enable row level security;
 alter table vehicle_requests enable row level security;
 alter table activity_logs enable row level security;
 
-create policy "Allow full access for authenticated clients" on users for all using (true);
-create policy "Allow full access for authenticated clients" on vehicles for all using (true);
-create policy "Allow full access for authenticated clients" on drivers for all using (true);
-create policy "Allow full access for authenticated clients" on departments for all using (true);
-create policy "Allow full access for authenticated clients" on vehicle_requests for all using (true);
-create policy "Allow full access for authenticated clients" on activity_logs for all using (true);
+-- Policies: Allow ALL operations for ALL roles (anon + authenticated)
+-- using (true) = allow SELECT
+-- with check (true) = allow INSERT/UPDATE/DELETE
+create policy "Allow all access" on users for all to anon, authenticated using (true) with check (true);
+create policy "Allow all access" on vehicles for all to anon, authenticated using (true) with check (true);
+create policy "Allow all access" on drivers for all to anon, authenticated using (true) with check (true);
+create policy "Allow all access" on departments for all to anon, authenticated using (true) with check (true);
+create policy "Allow all access" on vehicle_requests for all to anon, authenticated using (true) with check (true);
+create policy "Allow all access" on activity_logs for all to anon, authenticated using (true) with check (true);
 
 -- ========================================================
 -- 9. INSERT CHUẨN HÓA DỮ LIỆU MỚI BAN ĐẦU (SEED DATA)
@@ -145,3 +152,14 @@ insert into departments (name) values
   ('Phòng Dịch vụ Khách hàng'),
   ('Tổ Xử lý Nợ'),
   ('Phòng Bán lẻ');
+
+-- ========================================================
+-- 10. ENABLE SUPABASE REALTIME FOR ALL TABLES
+-- Cho phép đồng bộ thời gian thực giữa tất cả các thiết bị
+-- ========================================================
+alter publication supabase_realtime add table users;
+alter publication supabase_realtime add table vehicles;
+alter publication supabase_realtime add table drivers;
+alter publication supabase_realtime add table departments;
+alter publication supabase_realtime add table vehicle_requests;
+alter publication supabase_realtime add table activity_logs;

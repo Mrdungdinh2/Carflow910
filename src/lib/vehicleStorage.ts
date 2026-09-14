@@ -2,7 +2,7 @@
 
 import type { Vehicle, Driver, VehicleStatus, DriverStatus, FleetStats, ActivityLog } from './types';
 import { SEED_VEHICLES, SEED_DRIVERS, SEED_USERS } from './constants';
-import { pushVehicleToSupabase, pushDriverToSupabase } from './supabaseStorage';
+import { pushVehicleToSupabase, pushDriverToSupabase, deleteVehicleFromSupabase, deleteDriverFromSupabase, pushActivityLogToSupabase } from './supabaseStorage';
 
 const VEHICLES_KEY = 'carflow_vehicles';
 const DRIVERS_KEY = 'carflow_drivers';
@@ -39,6 +39,7 @@ export function updateVehicleStatus(id: string, status: VehicleStatus): void {
   vehicles[index].status = status;
   localStorage.setItem(VEHICLES_KEY, JSON.stringify(vehicles));
   pushVehicleToSupabase(vehicles[index]);
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }
 
 export function updateVehicleOdo(id: string, odo: number): void {
@@ -49,6 +50,7 @@ export function updateVehicleOdo(id: string, odo: number): void {
   vehicles[index].currentOdo = odo;
   localStorage.setItem(VEHICLES_KEY, JSON.stringify(vehicles));
   pushVehicleToSupabase(vehicles[index]);
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }
 
 export function updateDriverStatus(id: string, status: DriverStatus): void {
@@ -59,6 +61,7 @@ export function updateDriverStatus(id: string, status: DriverStatus): void {
   drivers[index].status = status;
   localStorage.setItem(DRIVERS_KEY, JSON.stringify(drivers));
   pushDriverToSupabase(drivers[index]);
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }
 
 export function saveVehicle(vehicle: Vehicle): void {
@@ -75,13 +78,17 @@ export function saveVehicle(vehicle: Vehicle): void {
   }
   localStorage.setItem(VEHICLES_KEY, JSON.stringify(vehicles));
   pushVehicleToSupabase(vehicles[index !== -1 ? index : vehicles.length - 1]);
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }
 
 export function deleteVehicle(idOrPlate: string): void {
   if (typeof window === 'undefined') return;
   const vehicles = getVehicles();
+  const target = vehicles.find(v => v.id === idOrPlate || v.plateNumber === idOrPlate);
   const filtered = vehicles.filter(v => v.id !== idOrPlate && v.plateNumber !== idOrPlate);
   localStorage.setItem(VEHICLES_KEY, JSON.stringify(filtered));
+  if (target) deleteVehicleFromSupabase(target.id);
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }
 
 // ===== DRIVERS =====
@@ -197,6 +204,7 @@ export function deleteDriver(id: string): void {
   const drivers = getDrivers();
   const filtered = drivers.filter(d => d.id !== id);
   localStorage.setItem(DRIVERS_KEY, JSON.stringify(filtered));
+  deleteDriverFromSupabase(id);
 }
 
 // ===== FLEET STATS =====
@@ -227,6 +235,7 @@ export function addActivityLog(entry: Omit<ActivityLog, 'id' | 'timestamp'>): vo
   logs.unshift(log);
   // Keep max 500
   localStorage.setItem(ACTIVITY_KEY, JSON.stringify(logs.slice(0, 500)));
+  pushActivityLogToSupabase(log);
 }
 
 export function getActivityLogs(limit: number = 20): ActivityLog[] {

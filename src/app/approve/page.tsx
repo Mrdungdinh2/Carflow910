@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { CheckSquare, MapPin, Clock, Building, User, ArrowLeft, Send } from 'lucide-react';
 import { getPendingForRole } from '@/lib/storage';
 import { VehicleRequest } from '@/lib/types';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { DirectTaskModal } from '@/components/DirectTaskModal';
@@ -34,6 +35,8 @@ export default function ApprovePage() {
     }
     refreshRequests();
   }, [user, router]);
+
+  useSupabaseSync(refreshRequests);
 
   if (!user) return null;
 

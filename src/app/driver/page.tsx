@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useAuth } from '@/lib/AuthContext';
 import { getRequests } from '@/lib/storage';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { getVehicles } from '@/lib/vehicleStorage';
 import type { VehicleRequest } from '@/lib/types';
 
@@ -24,6 +25,10 @@ export default function DriverDashboardPage() {
     setMounted(true);
     setRequests(getRequests());
   }, []);
+
+  useSupabaseSync(() => {
+    setRequests(getRequests());
+  });
 
   const driverRequests = useMemo(() => {
     if (!user) return [];

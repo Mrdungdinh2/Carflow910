@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import Link from 'next/link';
 import { useAuth } from '@/lib/AuthContext';
 import { ClipboardList, Search, Filter, Car, Trash2 } from 'lucide-react';
@@ -29,7 +30,7 @@ export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => {
+  const loadRequests = useCallback(() => {
     const all = getRequests();
     if (authUser?.role === 'staff') {
       setRequests(all.filter(r => r.requesterId === authUser.id));
@@ -41,6 +42,12 @@ export default function HistoryPage() {
       setRequests(all);
     }
   }, [authUser]);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  useSupabaseSync(loadRequests);
 
   const deleteRequest = useCallback((id: string) => {
     deleteReq(id);

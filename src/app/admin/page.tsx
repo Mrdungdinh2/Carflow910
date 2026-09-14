@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Users, Car, Building, Database, Trash2, Download, RefreshCw, UploadCloud, FileCode } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { useAuth } from '@/lib/AuthContext';
+import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { clearAllDemoData } from '@/lib/storage';
 import { useToast } from '@/components/Toast';
 import { generateCustomSqlFromCurrentData, syncAllCurrentDataDirectlyToSupabase } from '@/lib/exportCustomSql';
@@ -15,6 +16,10 @@ export default function AdminDashboard() {
   const { showToast } = useToast();
   const [cleared, setCleared] = useState(false);
   const [syncing, setSyncing] = useState(false);
+
+  useSupabaseSync(() => {
+    // Dashboard is static navigation — no local data to refresh
+  });
 
   if (user?.role !== 'admin') {
     return <div className="p-4 text-center pb-24 text-white">Bạn không có quyền truy cập trang này.</div>;

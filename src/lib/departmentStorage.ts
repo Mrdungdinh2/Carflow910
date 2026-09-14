@@ -1,13 +1,18 @@
 'use client';
 
 import { DEPARTMENTS } from './constants';
+import { pushDepartmentToSupabase, deleteDepartmentFromSupabase, updateDepartmentInSupabase } from './supabaseStorage';
 
 const DEPARTMENTS_KEY = 'carflow_departments';
 
-export function seedDepartments(): void {
+/**
+ * Seed departments ONLY if localStorage is completely empty.
+ * Called lazily, not on module import.
+ */
+export function seedDepartmentsIfEmpty(): void {
   if (typeof window === 'undefined') return;
   const raw = localStorage.getItem(DEPARTMENTS_KEY);
-  if (!raw || JSON.parse(raw).length === 0) {
+  if (!raw || raw === '[]') {
     localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(DEPARTMENTS));
   }
 }
@@ -23,6 +28,8 @@ export function getDepartments(): string[] {
       return Array.from(new Set(DEPARTMENTS));
     }
   }
+  // If no localStorage data at all, seed and return
+  seedDepartmentsIfEmpty();
   return Array.from(new Set(DEPARTMENTS));
 }
 
@@ -32,6 +39,8 @@ export function addDepartment(name: string): void {
   if (!deps.includes(name)) {
     deps.push(name);
     localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(deps));
+    pushDepartmentToSupabase(name);
+    window.dispatchEvent(new Event('carflow_data_changed'));
   }
 }
 
@@ -42,6 +51,8 @@ export function updateDepartment(oldName: string, newName: string): void {
   if (index !== -1) {
     deps[index] = newName;
     localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(deps));
+    updateDepartmentInSupabase(oldName, newName);
+    window.dispatchEvent(new Event('carflow_data_changed'));
   }
 }
 
@@ -50,8 +61,6 @@ export function deleteDepartment(name: string): void {
   const deps = getDepartments();
   const filtered = deps.filter(d => d !== name);
   localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(filtered));
-}
-
-if (typeof window !== 'undefined') {
-  seedDepartments();
+  deleteDepartmentFromSupabase(name);
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }
