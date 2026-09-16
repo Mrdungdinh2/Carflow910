@@ -13,18 +13,21 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      const loggedInUser = login(username, password);
-      setLoading(false);
+    try {
+      const loggedInUser = await login(username, password);
       if (!loggedInUser) {
         setError('Tên đăng nhập hoặc mật khẩu không chính xác.');
       }
-    }, 300);
+    } catch {
+      setError('Lỗi kết nối server. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

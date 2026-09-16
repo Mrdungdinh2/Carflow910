@@ -33,7 +33,7 @@ export default function HistoryPage() {
   const loadRequests = useCallback(() => {
     const all = getRequests();
     if (authUser?.role === 'staff') {
-      setRequests(all.filter(r => r.requesterId === authUser.id));
+      setRequests(all.filter(r => r.department === authUser.department));
     } else if (authUser?.role === 'dept_head') {
       setRequests(all.filter(r => r.department === authUser.department));
     } else if (authUser?.role === 'driver') {
@@ -51,9 +51,8 @@ export default function HistoryPage() {
 
   const deleteRequest = useCallback((id: string) => {
     deleteReq(id);
-    const all = getRequests();
-    setRequests(authUser?.role === 'staff' ? all.filter(r => r.requesterId === authUser.id) : all);
-  }, [authUser]);
+    loadRequests();
+  }, [loadRequests]);
 
   const filteredRequests = useMemo(() => {
     let result = requests;

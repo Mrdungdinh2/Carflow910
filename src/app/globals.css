@@ -87,6 +87,21 @@
   box-shadow: 0 0 20px rgba(244, 195, 175, 0.15);
 }
 
+/* Calendar/datetime icon — làm nổi bật trên nền tối */
+.glass-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.85) sepia(0.3) saturate(2) hue-rotate(170deg);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+}
+.glass-input::-webkit-calendar-picker-indicator:hover {
+  filter: invert(1) sepia(0.2) saturate(3) hue-rotate(160deg);
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 1;
+}
+
 .glass-select {
   width: 100%;
   padding: 0.85rem 2.5rem 0.85rem 1.1rem;

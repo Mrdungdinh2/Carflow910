@@ -18,9 +18,39 @@ import { VehicleRequest } from '@/lib/types';
 import { fixVietnameseUnicode } from '@/lib/vietnameseUtils';
 
 // Vietnamese date/time formatting
+// QUAN TRỌNG: Parse trực tiếp từ chuỗi string, KHÔNG dùng new Date()
+// Lý do: datetime-local input trả về "2026-09-16T19:00" (không có timezone).
+// new Date() có thể hiểu sai timezone → lệch giờ khi hiển thị/xuất file.
+// Parse string đảm bảo giờ/phút/ngày luôn CHÍNH XÁC với những gì user nhập.
 export function formatDateTimeVN(isoStr: string): { hour: string; minute: string; hourStr: string; day: string; month: string; year: string } {
   if (!isoStr) return { hour: '', minute: '', hourStr: '', day: '', month: '', year: '' };
+
+  // Hỗ trợ 2 format:
+  // 1. "2026-09-16T19:00"      (từ datetime-local input)
+  // 2. "2026-09-16T19:00:00Z"  (từ Supabase timestamptz — CẦN convert về local)
+  // 3. "2026-09-16T19:00:00+07:00" (ISO with timezone)
+
+  // Nếu chuỗi KHÔNG có timezone marker (Z, +, -) → parse trực tiếp (local time)
+  const hasTimezone = /[Z+]/.test(isoStr.slice(19)) || (isoStr.length > 19 && isoStr[19] === '-');
+
+  if (!hasTimezone) {
+    // Parse trực tiếp từ string — KHÔNG qua Date object
+    const match = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (!match) return { hour: '', minute: '', hourStr: '', day: '', month: '', year: '' };
+    const [, year, month, day, hour, minute] = match;
+    return {
+      hour,
+      minute,
+      hourStr: `${hour}h${minute}`,
+      day,
+      month,
+      year,
+    };
+  }
+
+  // Nếu CÓ timezone (từ Supabase) → dùng Date để convert về local time
   const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return { hour: '', minute: '', hourStr: '', day: '', month: '', year: '' };
   const hh = d.getHours().toString().padStart(2, '0');
   const mm = d.getMinutes().toString().padStart(2, '0');
   return {
@@ -35,13 +65,10 @@ export function formatDateTimeVN(isoStr: string): { hour: string; minute: string
 
 export function formatDateTimeVNString(isoStr: string): string {
   if (!isoStr) return '';
-  const d = new Date(isoStr);
-  const hh = d.getHours().toString().padStart(2, '0');
-  const mm = d.getMinutes().toString().padStart(2, '0');
-  const dd = d.getDate().toString().padStart(2, '0');
-  const MM = (d.getMonth() + 1).toString().padStart(2, '0');
-  const yyyy = d.getFullYear().toString();
-  return `${hh} giờ ${mm} phút, ngày ${dd} tháng ${MM} năm ${yyyy}`;
+  // Tái sử dụng formatDateTimeVN để đảm bảo parse timezone nhất quán
+  const dt = formatDateTimeVN(isoStr);
+  if (!dt.hour) return '';
+  return `${dt.hour} giờ ${dt.minute} phút, ngày ${dt.day} tháng ${dt.month} năm ${dt.year}`;
 }
 
 const FONT = 'Times New Roman';

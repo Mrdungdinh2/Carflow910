@@ -4,7 +4,6 @@ export type UserRole = 'staff' | 'dept_head' | 'tcth' | 'director' | 'driver' | 
 export interface User {
   id: string;
   username: string;
-  password: string;
   name: string;
   role: UserRole;
   department: string;

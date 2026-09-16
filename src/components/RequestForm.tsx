@@ -8,7 +8,8 @@ import GlassCard from '@/components/GlassCard';
 import PersonnelList from '@/components/PersonnelList';
 import DateTimePicker from '@/components/DateTimePicker';
 import { VehicleRequest, PersonnelEntry } from '@/lib/types';
-import { DEPARTMENTS, ROUTE_SUGGESTIONS } from '@/lib/constants';
+import { ROUTE_SUGGESTIONS } from '@/lib/constants';
+import { getDepartments } from '@/lib/departmentStorage';
 import { getFleetStats } from '@/lib/vehicleStorage';
 
 interface RequestFormProps {
@@ -17,11 +18,21 @@ interface RequestFormProps {
   onPreview: (data: Omit<VehicleRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'approvalHistory'>) => void;
 }
 
+const getNowLocalIso = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const mins = String(now.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${mins}`;
+};
+
 const getRoundedCurrentTime = () => {
   const now = new Date();
   const minutes = now.getMinutes();
-  const roundedMinutes = Math.round(minutes / 30) * 30;
-  now.setMinutes(roundedMinutes, 0, 0);
+  const remainder = 15 - (minutes % 15);
+  now.setMinutes(minutes + remainder, 0, 0);
   
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -29,6 +40,32 @@ const getRoundedCurrentTime = () => {
   const hours = String(now.getHours()).padStart(2, '0');
   const mins = String(now.getMinutes()).padStart(2, '0');
   
+  return `${year}-${month}-${day}T${hours}:${mins}`;
+};
+
+const addHoursToIso = (isoStr: string, hoursToAdd: number): string => {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  d.setHours(d.getHours() + hoursToAdd);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const mins = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${mins}`;
+};
+
+const setIsoHours = (isoStr: string, targetHours: number, targetMins = 0): string => {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  d.setHours(targetHours, targetMins, 0, 0);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const mins = String(d.getMinutes()).padStart(2, '0');
   return `${year}-${month}-${day}T${hours}:${mins}`;
 };
 
@@ -56,7 +93,8 @@ function SectionHeader({ index }: { index: number }) {
 
 export default function RequestForm({ initialData, onSubmit, onPreview }: RequestFormProps) {
   const { user } = useAuth();
-  const effectiveDept = initialData?.department || user?.department || 'Phòng Kế toán';
+  const effectiveDept = initialData?.department || user?.department || '';
+  const departments = useMemo(() => getDepartments(), []);
 
   const [requesterName, setRequesterName] = useState(initialData?.requesterName || user?.name || '');
   const [department, setDepartment] = useState(effectiveDept);
@@ -67,9 +105,13 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
       : [{ id: crypto.randomUUID(), name: '', department: '' }]
   );
   
-  const [startDateTime, setStartDateTime] = useState(initialData?.startDateTime || getRoundedCurrentTime());
-  const [endDateTime, setEndDateTime] = useState(initialData?.endDateTime || '');
+  const defaultStart = initialData?.startDateTime || getRoundedCurrentTime();
+  const defaultEnd = initialData?.endDateTime || addHoursToIso(defaultStart, 4);
+
+  const [startDateTime, setStartDateTime] = useState(defaultStart);
+  const [endDateTime, setEndDateTime] = useState(defaultEnd);
   const [timeError, setTimeError] = useState('');
+  const [dateError, setDateError] = useState('');
   
   const [pickupLocation, setPickupLocation] = useState(initialData?.pickupLocation || '');
   const [destination, setDestination] = useState(initialData?.destination || '');
@@ -77,18 +119,65 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
 
   const fleetStats = useMemo(() => getFleetStats(), []);
 
+  // Validation: Thời gian bắt đầu không được chọn ở quá khứ & tối đa 30 ngày tới
+  const validateDateRange = (start: string) => {
+    if (!start) return true;
+    const startDate = new Date(start);
+    if (isNaN(startDate.getTime())) return true;
+    
+    const now = new Date();
+    // 15 phút buffer thời gian làm thao tác form
+    const minAllowedThreshold = new Date(now.getTime() - 15 * 60 * 1000);
+    
+    if (startDate < minAllowedThreshold) {
+      setDateError('Thời gian bắt đầu không thể chọn ở quá khứ (phải từ thời điểm hiện tại trở đi)');
+      return false;
+    }
+    
+    const maxDate = new Date(now);
+    maxDate.setDate(maxDate.getDate() + 30);
+    maxDate.setHours(23, 59, 59, 999);
+    
+    if (startDate > maxDate) {
+      setDateError('Thời gian bắt đầu chỉ được đăng ký trước tối đa 30 ngày');
+      return false;
+    }
+
+    setDateError('');
+    return true;
+  };
+
   const validateTimes = (start: string, end: string) => {
     if (start && end && new Date(end) <= new Date(start)) {
-      setTimeError('Thời gian kết thúc phải sau thời gian bắt đầu');
+      const endDate = new Date(end);
+      if (!isNaN(endDate.getTime()) && endDate.getHours() === 0) {
+        setTimeError('Thời gian kết thúc đang chọn 12:xx SA (Nửa đêm). Bạn có muốn chuyển sang 12:xx CH (Buổi trưa)?');
+      } else {
+        setTimeError('Thời gian kết thúc phải sau thời gian bắt đầu');
+      }
       return false;
     }
     setTimeError('');
     return true;
   };
 
+  const handleFixMidnight = () => {
+    if (!endDateTime) return;
+    const fixed = endDateTime.replace(/T00:/, 'T12:');
+    setEndDateTime(fixed);
+    validateTimes(startDateTime, fixed);
+  };
+
   const handleStartChange = (val: string) => {
     setStartDateTime(val);
-    validateTimes(val, endDateTime);
+    validateDateRange(val);
+    if (!endDateTime || new Date(endDateTime) <= new Date(val)) {
+      const newEnd = addHoursToIso(val, 4);
+      setEndDateTime(newEnd);
+      validateTimes(val, newEnd);
+    } else {
+      validateTimes(val, endDateTime);
+    }
   };
 
   const handleEndChange = (val: string) => {
@@ -110,7 +199,9 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
 
   const handleDraftClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (timeError) return;
+    const isDateValid = validateDateRange(startDateTime);
+    const isTimeValid = validateTimes(startDateTime, endDateTime);
+    if (!isDateValid || !isTimeValid) return;
     const form = e.currentTarget.closest('form');
     if (form?.checkValidity()) {
       onSubmit(getFormData());
@@ -121,7 +212,9 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
 
   const handlePreviewClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (timeError) return;
+    const isDateValid = validateDateRange(startDateTime);
+    const isTimeValid = validateTimes(startDateTime, endDateTime);
+    if (!isDateValid || !isTimeValid) return;
     const form = e.currentTarget.closest('form');
     if (form?.checkValidity()) {
       onPreview(getFormData());
@@ -158,7 +251,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
                   className="glass-select w-full"
                 >
                   <option value="">Chọn phòng ban</option>
-                  {DEPARTMENTS.map(dept => (
+                  {departments.map(dept => (
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
@@ -233,14 +326,73 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
               label="Thời gian bắt đầu"
               value={startDateTime}
               onChange={handleStartChange}
+              min={getNowLocalIso()}
+              error={dateError}
             />
             <DateTimePicker
               label="Thời gian kết thúc"
               value={endDateTime}
               onChange={handleEndChange}
-              min={startDateTime}
+              min={startDateTime || getNowLocalIso()}
               error={timeError}
+              onFixMidnight={timeError && endDateTime.includes('T00:') ? handleFixMidnight : undefined}
             />
+          </div>
+
+          {/* Quick Preset Buttons */}
+          <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-white/[0.06]">
+            <span className="text-xs text-slate-400 font-medium">Chọn nhanh thời lượng công tác:</span>
+            <button
+              type="button"
+              onClick={() => {
+                const newEnd = addHoursToIso(startDateTime, 2);
+                setEndDateTime(newEnd);
+                validateTimes(startDateTime, newEnd);
+              }}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              ⚡ +2 giờ
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const newEnd = addHoursToIso(startDateTime, 4);
+                setEndDateTime(newEnd);
+                validateTimes(startDateTime, newEnd);
+              }}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              ⚡ +4 giờ
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const newEnd = setIsoHours(startDateTime, 17, 0);
+                setEndDateTime(newEnd);
+                validateTimes(startDateTime, newEnd);
+              }}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              🕒 Đến 17:00 (Hết giờ làm)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                let newStart = setIsoHours(startDateTime, 8, 0);
+                const nowIso = getNowLocalIso();
+                if (new Date(newStart).getTime() < new Date(nowIso).getTime() - 15 * 60 * 1000) {
+                  newStart = getRoundedCurrentTime();
+                }
+                const newEnd = setIsoHours(startDateTime, 17, 0);
+                setStartDateTime(newStart);
+                setEndDateTime(newEnd);
+                validateDateRange(newStart);
+                validateTimes(newStart, newEnd);
+              }}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              📅 Cả ngày (08:00 - 17:00)
+            </button>
           </div>
         </GlassCard>
 

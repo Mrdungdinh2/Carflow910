@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Users, Car, Building, Database, Trash2, Download, RefreshCw, UploadCloud, FileCode } from 'lucide-react';
+import { Users, Car, Building, Database, Trash2, Download, RefreshCw, UploadCloud, FileCode, FileText } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { useAuth } from '@/lib/AuthContext';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
@@ -103,6 +103,18 @@ export default function AdminDashboard() {
             <div>
               <h2 className="text-base font-semibold text-white">Quản lý Phòng ban</h2>
               <p className="text-xs text-gray-400">Danh sách các đơn vị phòng ban</p>
+            </div>
+          </GlassCard>
+        </Link>
+
+        <Link href="/admin/requests">
+          <GlassCard className="p-5 flex items-center gap-4 hover:bg-white/10 transition-colors border-cyan-500/20">
+            <div className="p-3 rounded-2xl bg-rose-500/20 text-rose-400">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-white">Quản lý Đề xuất</h2>
+              <p className="text-xs text-gray-400">Xem, thống kê, lọc & xóa đề xuất điều xe</p>
             </div>
           </GlassCard>
         </Link>

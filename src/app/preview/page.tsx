@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, FileText, FileSpreadsheet, Pencil, Loader2, PlayCircle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, FileText, FileSpreadsheet, Pencil, Loader2, PlayCircle, CheckCircle2, Trash2 } from 'lucide-react';
 import PreviewDocument from '@/components/PreviewDocument';
 import { ApprovalTimeline } from '@/components/ApprovalTimeline';
 import { RejectionModal } from '@/components/RejectionModal';
@@ -16,7 +16,7 @@ import { exportXlsx } from '@/lib/exportXlsx';
 import { getRequestById, addApprovalEntry, assignVehicleToRequest, completeTrip } from '@/lib/storage';
 import { getVehicles, getDrivers, updateVehicleStatus, updateDriverStatus } from '@/lib/vehicleStorage';
 import { getAvailableVehiclesForTimeRange, getAvailableDriversForTimeRange } from '@/lib/conflictCheck';
-import { getRequests } from '@/lib/storage';
+import { getRequests, deleteRequest } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/Toast';
 import { ROLE_CONFIG } from '@/lib/constants';
@@ -37,6 +37,7 @@ function PreviewContent() {
   const [showOdoModal, setShowOdoModal] = useState(false);
   const [odoStart, setOdoStart] = useState('');
   const [odoEnd, setOdoEnd] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // For TCTH vehicle/driver assignment
   const [showAssignment, setShowAssignment] = useState(false);
@@ -44,6 +45,11 @@ function PreviewContent() {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [availableVehicles, setAvailableVehicles] = useState<Vehicle[]>([]);
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
+  const [blockedInfo, setBlockedInfo] = useState<{
+    busyVehicles: number; maintVehicles: number; retiredVehicles: number;
+    busyDrivers: number; offDrivers: number;
+    totalVehicles: number; totalDrivers: number;
+  } | null>(null);
 
   const refreshRequest = () => {
     if (id) {
@@ -85,7 +91,7 @@ function PreviewContent() {
     if (!user || !request) return false;
     if (['tcth', 'director', 'admin'].includes(user.role)) return true;
     if (user.role === 'dept_head') return request.department === user.department;
-    if (user.role === 'staff') return request.requesterId === user.id;
+    if (user.role === 'staff') return request.requesterId === user.id || request.department === user.department;
     if (user.role === 'driver') return request.assignedDriverId === user.id;
     return false;
   };
@@ -126,7 +132,9 @@ function PreviewContent() {
 
   const canSubmit = () => {
     if (!user) return false;
-    // Only the requester can submit their own draft/rejected requests
+    if (user.role === 'dept_head' && user.department === request.department && (request.status === 'draft' || request.status === 'rejected')) {
+      return true;
+    }
     return (request.status === 'draft' || request.status === 'rejected') && isOwner;
   };
 
@@ -138,6 +146,22 @@ function PreviewContent() {
   const canDriverComplete = () => {
     if (!user) return false;
     return user.role === 'driver' && request.status === 'driver_accepted' && request.assignedDriverId === user.id;
+  };
+
+  const canDelete = () => {
+    if (!user) return false;
+    if (['draft', 'pending', 'rejected'].includes(request.status)) {
+      if (isOwner) return true;
+      if (user.role === 'admin') return true;
+      if (user.role === 'dept_head' && user.department === request.department) return true;
+    }
+    return false;
+  };
+
+  const handleDelete = () => {
+    deleteRequest(request.id);
+    showToast('Đã xóa đề xuất thành công', 'success');
+    router.push('/');
   };
 
   const handleApprove = () => {
@@ -152,6 +176,24 @@ function PreviewContent() {
       const avDrivers = getAvailableDriversForTimeRange(drivers, allRequests, request.startDateTime, request.endDateTime, request.id);
       setAvailableVehicles(avVehicles);
       setAvailableDrivers(avDrivers);
+
+      // Thống kê xe/tài xế không khả dụng để thông báo cho TCTH
+      const busyVehicles = vehicles.filter(v => v.status === 'in_use');
+      const maintVehicles = vehicles.filter(v => v.status === 'maintenance');
+      const retiredVehicles = vehicles.filter(v => v.status === 'retired');
+      const busyDrivers = drivers.filter(d => d.status === 'on_duty');
+      const offDrivers = drivers.filter(d => d.status === 'day_off' || d.status === 'sick_leave');
+
+      setBlockedInfo({
+        busyVehicles: busyVehicles.length,
+        maintVehicles: maintVehicles.length,
+        retiredVehicles: retiredVehicles.length,
+        busyDrivers: busyDrivers.length,
+        offDrivers: offDrivers.length,
+        totalVehicles: vehicles.length,
+        totalDrivers: drivers.length,
+      });
+
       setSelectedVehicle(null);
       setSelectedDriver(null);
       setShowAssignment(true);
@@ -236,16 +278,42 @@ function PreviewContent() {
   };
 
   const handleSubmit = () => {
-    if (!user) return;
-    const entry: Omit<ApprovalEntryType, 'id' | 'timestamp'> = {
-      action: 'submit',
-      by: user.id,
-      byName: user.name,
-      byRole: user.role,
-      note: 'Gửi duyệt',
-    };
-    addApprovalEntry(request.id, entry as ApprovalEntryType);
-    showToast('Đã gửi đề xuất chờ duyệt', 'success');
+    if (!user || !request) return;
+
+    if (user.role === 'dept_head') {
+      // Nếu là Lãnh đạo phòng: Gửi đề xuất + tự duyệt phòng -> Chuyển sang Phòng TCTH duyệt & gán xe
+      const submitEntry: Omit<ApprovalEntryType, 'id' | 'timestamp'> = {
+        action: 'submit',
+        by: user.id,
+        byName: user.name,
+        byRole: user.role,
+        note: 'Tạo đề xuất',
+      };
+      addApprovalEntry(request.id, submitEntry as ApprovalEntryType);
+
+      const approveEntry: Omit<ApprovalEntryType, 'id' | 'timestamp'> = {
+        action: 'approve',
+        by: user.id,
+        byName: user.name,
+        byRole: user.role,
+        note: 'Trưởng phòng phê duyệt & Gửi Phòng TCTH',
+      };
+      addApprovalEntry(request.id, approveEntry as ApprovalEntryType);
+
+      showToast('Đã gửi đề xuất cho Phòng TCTH duyệt & gán xe!', 'success');
+    } else {
+      // Nhân viên gửi duyệt -> Trưởng phòng duyệt
+      const entry: Omit<ApprovalEntryType, 'id' | 'timestamp'> = {
+        action: 'submit',
+        by: user.id,
+        byName: user.name,
+        byRole: user.role,
+        note: 'Gửi duyệt',
+      };
+      addApprovalEntry(request.id, entry as ApprovalEntryType);
+      showToast('Đã gửi đề xuất cho Trưởng phòng duyệt', 'success');
+    }
+
     refreshRequest();
   };
 
@@ -342,6 +410,44 @@ function PreviewContent() {
         </div>
       </div>
 
+      {/* Assigned Vehicle & Driver Info */}
+      {(request.assignedVehicleId || request.assignedDriverId) && (
+        <div className="max-w-4xl mx-auto px-4 mb-4">
+          <GlassCard className="p-4">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <span className="text-base">🚗</span> Thông tin xe & tài xế được gán
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {request.assignedVehicleId && (
+                <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Phương tiện</p>
+                  <p className="text-sm font-semibold text-white">
+                    {(() => { const v = getVehicles().find(v => v.id === request.assignedVehicleId); return v ? `${v.plateNumber} • ${v.model} (${v.seats} chỗ)` : request.assignedVehicleId; })()}
+                  </p>
+                </div>
+              )}
+              {request.assignedDriverId && (
+                <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Tài xế</p>
+                  <p className="text-sm font-semibold text-white">
+                    {(() => { const d = getDrivers().find(d => d.id === request.assignedDriverId); return d ? `${d.name} • ${d.phone}` : request.assignedDriverId; })()}
+                  </p>
+                  <p className="text-xs mt-1">
+                    {request.status === 'tcth_approved' ? (
+                      <span className="text-amber-400 font-semibold">⏳ Chờ tài xế nhận nhiệm vụ</span>
+                    ) : request.status === 'driver_accepted' ? (
+                      <span className="text-violet-400 font-semibold">🚀 Tài xế đã nhận - Đang thực hiện</span>
+                    ) : request.status === 'completed' ? (
+                      <span className="text-emerald-400 font-semibold">✅ Đã hoàn thành</span>
+                    ) : null}
+                  </p>
+                </div>
+              )}
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
       {/* Approval Timeline */}
       {request.approvalHistory && request.approvalHistory.length > 0 && (
         <div className="max-w-4xl mx-auto px-4 mb-4">
@@ -362,10 +468,53 @@ function PreviewContent() {
               <p className="text-xs text-slate-400 mt-1">Chọn xe và tài xế cho chuyến công tác</p>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Tổng quan trạng thái đội xe */}
+              {blockedInfo && (blockedInfo.busyVehicles > 0 || blockedInfo.maintVehicles > 0 || blockedInfo.busyDrivers > 0 || blockedInfo.offDrivers > 0) && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 space-y-2">
+                  <p className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">⚠️ Tình trạng tài nguyên hiện tại</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {blockedInfo.busyVehicles > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/20 font-medium">
+                        🚗 {blockedInfo.busyVehicles} xe đang thực hiện
+                      </span>
+                    )}
+                    {blockedInfo.maintVehicles > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/20 font-medium">
+                        🔧 {blockedInfo.maintVehicles} xe bảo trì
+                      </span>
+                    )}
+                    {blockedInfo.retiredVehicles > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-300 border border-slate-500/20 font-medium">
+                        ⛔ {blockedInfo.retiredVehicles} xe ngừng sử dụng
+                      </span>
+                    )}
+                    {blockedInfo.busyDrivers > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/20 font-medium">
+                        👨‍✈️ {blockedInfo.busyDrivers} tài xế đang chạy
+                      </span>
+                    )}
+                    {blockedInfo.offDrivers > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-300 border border-slate-500/20 font-medium">
+                        🏠 {blockedInfo.offDrivers} tài xế nghỉ phép
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Danh sách xe sẵn sàng */}
               <div>
-                <p className="text-sm font-medium text-slate-300 mb-2">Xe trống ({availableVehicles.length})</p>
+                <p className="text-sm font-medium text-slate-300 mb-2">
+                  🚗 Xe sẵn sàng ({availableVehicles.length}{blockedInfo ? `/${blockedInfo.totalVehicles}` : ''})
+                </p>
                 {availableVehicles.length === 0 ? (
-                  <p className="text-xs text-red-400">⚠ Không còn xe trống trong khung giờ này!</p>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center">
+                    <p className="text-sm font-semibold text-red-300 mb-1">⚠ Không có xe nào sẵn sàng!</p>
+                    <p className="text-[11px] text-red-300/70">
+                      Tất cả xe đang ở trạng thái bận (đang thực hiện / bảo trì / ngừng hoạt động).
+                      Vui lòng chờ xe hoàn thành chuyến hoặc từ chối đề xuất.
+                    </p>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {availableVehicles.map(v => (
@@ -374,10 +523,20 @@ function PreviewContent() {
                   </div>
                 )}
               </div>
+
+              {/* Danh sách tài xế sẵn sàng */}
               <div>
-                <p className="text-sm font-medium text-slate-300 mb-2">Tài xế trống ({availableDrivers.length})</p>
+                <p className="text-sm font-medium text-slate-300 mb-2">
+                  👨‍✈️ Tài xế sẵn sàng ({availableDrivers.length}{blockedInfo ? `/${blockedInfo.totalDrivers}` : ''})
+                </p>
                 {availableDrivers.length === 0 ? (
-                  <p className="text-xs text-red-400">⚠ Không có tài xế trống!</p>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center">
+                    <p className="text-sm font-semibold text-red-300 mb-1">⚠ Không có tài xế nào sẵn sàng!</p>
+                    <p className="text-[11px] text-red-300/70">
+                      Tất cả tài xế đang bận (đang thực hiện / nghỉ phép / nghỉ ốm).
+                      Vui lòng chờ tài xế hoàn thành chuyến hoặc từ chối đề xuất.
+                    </p>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {availableDrivers.map(d => (
@@ -429,8 +588,14 @@ function PreviewContent() {
 
           {/* Row 2: Submit / Approve / Reject */}
           {canSubmit() && (
-            <button onClick={handleSubmit} className="w-full btn-primary flex items-center justify-center gap-2 text-sm py-3 bg-gradient-to-r from-emerald-500 to-cyan-600">
-              Gửi duyệt
+            <button onClick={handleSubmit} className="w-full btn-primary flex items-center justify-center gap-2 text-sm py-3 bg-gradient-to-r from-emerald-500 to-cyan-600 font-bold shadow-lg shadow-cyan-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all">
+              {user?.role === 'dept_head' ? '📤 Gửi Phòng TCTH' : '📤 Gửi Trưởng phòng duyệt'}
+            </button>
+          )}
+          {canDelete() && (
+            <button onClick={() => setShowDeleteConfirm(true)} className="w-full btn-danger flex items-center justify-center gap-2 text-sm py-2.5 bg-gradient-to-r from-red-600 to-rose-600">
+              <Trash2 className="w-4 h-4" />
+              Xóa đề xuất
             </button>
           )}
           {canApprove() && (
@@ -438,8 +603,8 @@ function PreviewContent() {
               <button onClick={() => setShowRejectModal(true)} className="btn-danger flex-1 flex items-center justify-center gap-2 text-sm py-3">
                 Từ chối
               </button>
-              <button onClick={handleApprove} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-3 bg-gradient-to-r from-emerald-500 to-cyan-600">
-                {user?.role === 'tcth' ? 'Duyệt & Gán xe' : 'Phê duyệt'}
+              <button onClick={handleApprove} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-3 bg-gradient-to-r from-emerald-500 to-cyan-600 font-bold">
+                {user?.role === 'tcth' ? 'Duyệt & Gán xe' : user?.role === 'dept_head' ? 'Duyệt & Gửi Phòng TCTH' : 'Phê duyệt'}
               </button>
             </div>
           )}
@@ -464,10 +629,20 @@ function PreviewContent() {
       <ConfirmDialog
         isOpen={showApproveConfirm}
         title="Phê duyệt đề xuất?"
-        message="Xác nhận phê duyệt đề xuất điều xe này?"
+        message={user?.role === 'dept_head' ? 'Xác nhận phê duyệt đề xuất này?' : 'Xác nhận phê duyệt đề xuất điều xe này?'}
         confirmLabel="Phê duyệt"
         onConfirm={confirmApprove}
         onCancel={() => setShowApproveConfirm(false)}
+      />
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Xóa đề xuất?"
+        message="Bạn có chắc muốn xóa đề xuất này? Hành động này không thể hoàn tác."
+        confirmLabel="Xóa"
+        cancelLabel="Giữ lại"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
       />
 
       {/* ODO Modal */}

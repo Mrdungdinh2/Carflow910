@@ -22,15 +22,16 @@ export default function UsersAdmin() {
   const [showModal, setShowModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   
-  const [formData, setFormData] = useState<Partial<User>>({
+  const [formData, setFormData] = useState<Partial<User> & { newPassword?: string }>({
     id: '',
     username: '',
-    password: '',
+    newPassword: '',
     name: '',
     role: 'staff',
     department: '',
   });
   const [isEdit, setIsEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const refreshData = () => {
     setUsers(getUsers());
@@ -67,37 +68,63 @@ export default function UsersAdmin() {
     );
   }
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.username?.trim() || !formData.name?.trim()) {
       showToast('Vui lòng điền tên đăng nhập và họ tên', 'error');
       return;
     }
 
-    if (!isEdit && !formData.password?.trim()) {
+    if (!isEdit && !formData.newPassword?.trim()) {
       showToast('Vui lòng nhập mật khẩu cho tài khoản mới', 'error');
       return;
     }
 
-    saveUser({
-      id: formData.id || 'usr_' + Date.now(),
-      username: formData.username.trim(),
-      password: formData.password ? formData.password.trim() : undefined,
-      name: formData.name.trim(),
-      role: (formData.role as UserRole) || 'staff',
-      department: formData.department || '',
-    } as User);
+    setSaving(true);
+    try {
+      // Save user info (without password) to localStorage + Supabase
+      saveUser({
+        id: formData.id || 'usr_' + Date.now(),
+        username: formData.username.trim(),
+        name: formData.name.trim(),
+        role: (formData.role as UserRole) || 'staff',
+        department: formData.department || '',
+      } as User);
 
-    showToast(isEdit ? 'Đã cập nhật người dùng!' : 'Đã tạo người dùng mới!', 'success');
-    refreshData();
-    setShowModal(false);
+      // If password provided, set it via secure server-side API
+      if (formData.newPassword?.trim()) {
+        const pwRes = await fetch('/api/auth/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: formData.username.trim(),
+            newPassword: formData.newPassword.trim(),
+            adminOverride: true,
+          }),
+        });
+        if (!pwRes.ok) {
+          const err = await pwRes.json().catch(() => ({}));
+          showToast(err.error || 'Lỗi khi đặt mật khẩu', 'error');
+          setSaving(false);
+          return;
+        }
+      }
+
+      showToast(isEdit ? 'Đã cập nhật người dùng!' : 'Đã tạo người dùng mới!', 'success');
+      refreshData();
+      setShowModal(false);
+    } catch {
+      showToast('Lỗi kết nối server', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEdit = (u: User) => {
     setFormData({
       id: u.id,
       username: u.username,
-      password: '', // blank password unless changed
+      newPassword: '', // blank unless changing password
       name: u.name,
       role: u.role,
       department: u.department || '',
@@ -123,7 +150,7 @@ export default function UsersAdmin() {
     setFormData({
       id: 'usr_' + Date.now(),
       username: '',
-      password: '123',
+      newPassword: '123456',
       name: '',
       role: 'staff',
       department: departments[0] || 'Phòng Tổng hợp',
@@ -248,8 +275,8 @@ export default function UsersAdmin() {
                 </label>
                 <input
                   type="password"
-                  value={formData.password}
-                  onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  value={formData.newPassword}
+                  onChange={e => setFormData({ ...formData, newPassword: e.target.value })}
                   className="glass-input w-full text-xs"
                   placeholder="Nhập mật khẩu"
                   required={!isEdit}
@@ -308,9 +335,10 @@ export default function UsersAdmin() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all"
+                  disabled={saving}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50"
                 >
-                  Lưu thay đổi
+                  {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
               </div>
             </form>

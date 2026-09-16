@@ -6,9 +6,34 @@ import { fixVietnameseUnicode } from './vietnameseUtils';
 import { pushRequestToSupabase, deleteRequestFromSupabase } from './supabaseStorage';
 
 const STORAGE_KEY = 'carflow_requests';
+const ACTIVITY_KEY = 'carflow_activity';
+const MAX_LOCAL_REQUESTS = 200;
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+}
+
+/**
+ * Ghi localStorage an toàn — bắt QuotaExceededError thay vì crash app.
+ */
+function safeLocalStorageSet(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+      console.warn(`[CarFlow Storage] localStorage đầy khi ghi key "${key}". Đang dọn dẹp...`);
+      try {
+        localStorage.removeItem(ACTIVITY_KEY);
+        localStorage.setItem(key, value);
+        return true;
+      } catch {
+        console.error(`[CarFlow Storage] localStorage vẫn đầy. Key: "${key}", Size: ${(value.length / 1024).toFixed(1)}KB`);
+        return false;
+      }
+    }
+    throw err;
+  }
 }
 
 export function getRequests(): VehicleRequest[] {
@@ -70,7 +95,9 @@ export function saveRequest(request: Partial<VehicleRequest>): VehicleRequest {
     requests.unshift(saved);
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+  // Giới hạn số lượng requests trong localStorage để tránh vượt 5MB
+  const trimmed = requests.slice(0, MAX_LOCAL_REQUESTS);
+  safeLocalStorageSet(STORAGE_KEY, JSON.stringify(trimmed));
   pushRequestToSupabase(saved);
   return saved;
 }
@@ -82,14 +109,14 @@ export function updateRequestStatus(id: string, status: RequestStatus): void {
   if (index === -1) return;
   requests[index].status = status;
   requests[index].updatedAt = new Date().toISOString();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+  safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(requests[index]);
 }
 
 export function deleteRequest(id: string): void {
   if (typeof window === 'undefined') return;
   const requests = getRequests().filter(r => r.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+  safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   deleteRequestFromSupabase(id);
 }
 
@@ -139,7 +166,7 @@ export function addApprovalEntry(
   }
 
   requests[index].updatedAt = new Date().toISOString();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+  safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(requests[index]);
 
   // Log activity
@@ -182,7 +209,7 @@ export function assignVehicleToRequest(requestId: string, vehicleId: string, dri
   requests[index].assignedVehicleId = vehicleId;
   requests[index].assignedDriverId = driverId;
   requests[index].updatedAt = new Date().toISOString();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+  safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(requests[index]);
 
   // Update vehicle & driver status
@@ -208,7 +235,7 @@ export function completeTrip(requestId: string, endOdo: number): void {
   const req = requests[index];
   req.tripOdoEnd = endOdo;
   req.updatedAt = new Date().toISOString();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+  safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(req);
 
   // Release vehicle & driver
@@ -293,7 +320,7 @@ export function createDirectTask(data: {
   const requests = getRequests();
   requests.unshift(newRequest);
   if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+    safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
     pushRequestToSupabase(newRequest);
   }
 

@@ -1,19 +1,37 @@
 'use client';
 
 import { User } from '@/lib/types';
-import { getUsers } from '@/lib/userStorage';
 
 const AUTH_KEY = 'carflow_user';
 
-export const login = (username: string, password: string): User | null => {
-  const user = getUsers().find((u: User) => u.username === username && u.password === password);
-  if (user) {
-    if (typeof window !== 'undefined') {
+/**
+ * Server-side login via API Route
+ * Password verification happens on server — NEVER on client
+ */
+export const login = async (username: string, password: string): Promise<User | null> => {
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      console.warn('[Auth] Login failed:', data.error || res.statusText);
+      return null;
+    }
+
+    const { user } = await res.json();
+    if (user && typeof window !== 'undefined') {
+      // Store user info in session (NO password)
       sessionStorage.setItem(AUTH_KEY, JSON.stringify(user));
     }
     return user;
+  } catch (err) {
+    console.error('[Auth] Login error:', err);
+    return null;
   }
-  return null;
 };
 
 export const logout = (): void => {

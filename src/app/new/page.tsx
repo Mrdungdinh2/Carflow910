@@ -41,12 +41,16 @@ function NewRequestContent() {
   };
 
   const handlePreview = (data: Omit<VehicleRequest, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'approvalHistory'>) => {
+    // Không tự động gửi TCTH khi Trưởng phòng tạo.
+    // Lưu nháp (draft) để xem trước, Trưởng phòng sẽ bấm nút "Gửi Phòng TCTH" tại trang xem trước.
     const saved = saveRequest({
       ...data,
       ...(editId ? { id: editId } : {}),
       requesterId: user?.id,
-      status: 'draft',
+      status: initialData?.status || 'draft',
     });
+    
+    showToast('Đã lưu bản nháp & mở trang xem trước', 'info');
     router.push(`/preview?id=${saved.id}`);
   };
 

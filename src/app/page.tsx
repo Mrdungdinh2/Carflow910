@@ -5,11 +5,13 @@ import Link from 'next/link';
 import {
   Car, Sparkles, ChevronRight, Calendar, LogOut, CheckSquare, PlusCircle,
   Clock, Activity, Truck, Settings, ShieldCheck, BarChart3, FileText,
-  Eye, EyeOff, ArrowRight, MapPin, Compass, X, Info
+  Eye, EyeOff, ArrowRight, MapPin, Compass, X, Info, Trash2, Pencil
 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge } from '@/components/StatusBadge';
-import { getRequests, getPendingForRole } from '@/lib/storage';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useToast } from '@/components/Toast';
+import { getRequests, getPendingForRole, deleteRequest } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { ROLE_CONFIG } from '@/lib/constants';
 import type { VehicleRequest, DashboardStats as DashboardStatsType } from '@/lib/types';
@@ -18,10 +20,12 @@ import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
+  const { showToast } = useToast();
   const [allRequests, setAllRequests] = useState<VehicleRequest[]>([]);
   const [mounted, setMounted] = useState(false);
   const [showStatsNumber, setShowStatsNumber] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Dashboard Modals
   const [showSafetyModal, setShowSafetyModal] = useState(false);
@@ -39,7 +43,7 @@ export default function DashboardPage() {
 
   const userRequests = useMemo(() => {
     if (user?.role === 'staff') {
-      return allRequests.filter(r => r.requesterId === user.id);
+      return allRequests.filter(r => r.department === user.department);
     }
     if (user?.role === 'dept_head') {
       return allRequests.filter(r => r.department === user.department);
@@ -178,6 +182,12 @@ export default function DashboardPage() {
               <span>Phê duyệt ngay ({pendingCount})</span>
             </Link>
           )}
+          {['admin', 'tcth'].includes(user?.role || '') && (
+            <Link href="/admin/requests" className="flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 px-4 py-2.5 rounded-full text-xs font-semibold text-violet-300 transition-all">
+              <BarChart3 className="w-4 h-4 text-violet-400" />
+              <span>Quản lý đề xuất</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -270,7 +280,7 @@ export default function DashboardPage() {
             <span className="text-[11px] font-medium text-slate-200 leading-tight">Lịch sử điều xe</span>
           </Link>
 
-          {/* Item 6: Admin / Driver Mission */}
+          {/* Item 6: Admin / Driver Mission — chỉ hiện cho driver, admin, tcth */}
           {user?.role === 'admin' ? (
             <Link href="/admin" className="flex flex-col items-center text-center group">
               <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-110 transition-transform mb-2">
@@ -278,14 +288,14 @@ export default function DashboardPage() {
               </div>
               <span className="text-[11px] font-medium text-slate-200 leading-tight">Quản trị Admin</span>
             </Link>
-          ) : (
+          ) : ['driver', 'tcth'].includes(user?.role || '') ? (
             <Link href="/driver" className="flex flex-col items-center text-center group">
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform mb-2">
                 <Compass className="w-6 h-6" />
               </div>
               <span className="text-[11px] font-medium text-slate-200 leading-tight">Nhiệm vụ tài xế</span>
             </Link>
-          )}
+          ) : null}
 
           {/* Item 7: Quy định an toàn (Interactive Modal) */}
           <button onClick={() => setShowSafetyModal(true)} className="flex flex-col items-center text-center group cursor-pointer">
@@ -332,22 +342,72 @@ export default function DashboardPage() {
           </GlassCard>
         ) : (
           <div className="space-y-3">
-            {recentRequests.map((req) => (
-              <Link key={req.id} href={`/preview?id=${req.id}`}>
-                <GlassCard hover className="p-4 bg-[#121929]/80 border-white/10 rounded-2xl">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-white truncate">{req.destination}</p>
-                      <p className="text-xs text-slate-400 truncate mt-0.5">{req.requesterName} • {req.department}</p>
+            {recentRequests.map((req) => {
+              const isPending = req.status === 'pending';
+              const isOwner = req.requesterId === user?.id;
+              const canEdit = isPending && isOwner;
+              return (
+              <div key={req.id} className="relative">
+                <Link href={canEdit ? `/new?id=${req.id}` : `/preview?id=${req.id}`}>
+                  <GlassCard hover className="p-4 bg-[#121929]/80 border-white/10 rounded-2xl">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{req.destination}</p>
+                        <p className="text-xs text-slate-400 truncate mt-0.5">{req.requesterName} • {req.department}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <StatusBadge status={req.status} />
+                      </div>
                     </div>
-                    <StatusBadge status={req.status} />
-                  </div>
-                </GlassCard>
-              </Link>
-            ))}
+
+                    {/* Edit/Delete Actions — chỉ hiện khi trạng thái Chờ phê duyệt */}
+                    {canEdit && (
+                      <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-white/[0.06]">
+                        <span
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/new?id=${req.id}`; }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[11px] font-semibold hover:bg-cyan-500/20 transition-all cursor-pointer"
+                        >
+                          <Pencil className="w-3 h-3" />
+                          Chỉnh sửa
+                        </span>
+                        <span
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget({ id: req.id, name: req.destination || req.requesterName }); }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-semibold hover:bg-red-500/20 transition-all cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Xóa
+                        </span>
+                        <span className="flex-1" />
+                        <span className="text-[9px] text-slate-600 italic">Đang chờ duyệt — có thể sửa/xóa</span>
+                      </div>
+                    )}
+                  </GlassCard>
+                </Link>
+              </div>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Delete Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Xóa đề xuất?"
+        message={`Bạn có chắc muốn xóa đề xuất "${deleteTarget?.name || ''}"? Hành động này không thể hoàn tác.`}
+        confirmLabel="Xóa"
+        cancelLabel="Giữ lại"
+        variant="danger"
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteRequest(deleteTarget.id);
+            setAllRequests(getRequests());
+            showToast('Đã xóa đề xuất', 'success');
+            setDeleteTarget(null);
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Logout modal */}
       <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} />

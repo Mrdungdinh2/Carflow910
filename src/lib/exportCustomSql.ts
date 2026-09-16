@@ -46,7 +46,7 @@ export function generateCustomSqlFromCurrentData(): string {
   sql += `create table users (\n`;
   sql += `  id text primary key default uuid_generate_v4()::text,\n`;
   sql += `  username text unique not null,\n`;
-  sql += `  password text not null,\n`;
+  sql += `  password_hash text not null,\n`;
   sql += `  name text not null,\n`;
   sql += `  role text not null check (role in ('staff', 'dept_head', 'tcth', 'director', 'driver', 'admin')),\n`;
   sql += `  department text not null,\n`;
@@ -135,12 +135,12 @@ export function generateCustomSqlFromCurrentData(): string {
   sql += `-- 4. EXPORTED CURRENT DATA (${users.length} Users, ${vehicles.length} Vehicles, ${departments.length} Departments, ${drivers.length} Drivers)\n`;
   sql += `-- ========================================================\n\n`;
 
-  // Insert Users
+  // Insert Users (password NOT exported — passwords are managed server-side)
   if (users.length > 0) {
-    sql += `-- INSERT USERS\n`;
-    sql += `insert into users (id, username, password, name, role, department) values\n`;
+    sql += `-- INSERT USERS (password_hash NOT included for security — set via API)\n`;
+    sql += `insert into users (id, username, password_hash, name, role, department) values\n`;
     const userRows = users.map(u => 
-      `  (${escapeSqlString(u.id)}, ${escapeSqlString(u.username)}, ${escapeSqlString(u.password)}, ${escapeSqlString(u.name)}, ${escapeSqlString(u.role)}, ${escapeSqlString(u.department)})`
+      `  (${escapeSqlString(u.id)}, ${escapeSqlString(u.username)}, ${escapeSqlString('$2b$10$placeholder_hash_set_via_api')}, ${escapeSqlString(u.name)}, ${escapeSqlString(u.role)}, ${escapeSqlString(u.department)})`
     );
     sql += userRows.join(',\n') + `\non conflict (username) do update set name = excluded.name, role = excluded.role, department = excluded.department;\n\n`;
   }

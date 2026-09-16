@@ -73,7 +73,9 @@ export function isDriverAvailable(
 }
 
 /**
- * Get all available vehicles for a time range
+ * Get all available vehicles for a time range.
+ * CHỈ xe có status === 'available' mới được gán.
+ * Xe đang 'in_use', 'maintenance', 'retired' đều bị loại.
  */
 export function getAvailableVehiclesForTimeRange(
   vehicles: Vehicle[],
@@ -83,14 +85,17 @@ export function getAvailableVehiclesForTimeRange(
   excludeRequestId?: string
 ): Vehicle[] {
   return vehicles.filter(v => {
-    if (v.status === 'maintenance' || v.status === 'retired') return false;
+    // CHỈ cho phép xe ở trạng thái "sẵn sàng"
+    if (v.status !== 'available') return false;
     const { available } = isVehicleAvailable(v.id, startTime, endTime, allRequests, excludeRequestId);
     return available;
   });
 }
 
 /**
- * Get all available drivers for a time range
+ * Get all available drivers for a time range.
+ * CHỈ tài xế có status === 'available' mới được gán.
+ * Tài xế đang 'on_duty', 'day_off', 'sick_leave' đều bị loại.
  */
 export function getAvailableDriversForTimeRange(
   drivers: Driver[],
@@ -100,7 +105,8 @@ export function getAvailableDriversForTimeRange(
   excludeRequestId?: string
 ): Driver[] {
   return drivers.filter(d => {
-    if (d.status === 'day_off' || d.status === 'sick_leave') return false;
+    // CHỈ cho phép tài xế ở trạng thái "sẵn sàng"
+    if (d.status !== 'available') return false;
     const { available } = isDriverAvailable(d.id, startTime, endTime, allRequests, excludeRequestId);
     return available;
   });

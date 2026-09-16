@@ -22,19 +22,18 @@ export function seedUsersIfEmpty(): void {
 }
 
 export function getUsers(): User[] {
-  if (typeof window === 'undefined') return SEED_USERS;
+  if (typeof window === 'undefined') return [];
   const raw = localStorage.getItem(USERS_KEY);
   if (raw) {
     try {
       const parsed: User[] = JSON.parse(raw);
       return parsed.filter(u => !DEMO_DRIVER_NAMES.includes(u.name));
     } catch {
-      return SEED_USERS;
+      return [];
     }
   }
-  // If no localStorage data at all, seed and return
-  seedUsersIfEmpty();
-  return SEED_USERS;
+  // No localStorage data — Supabase sync will populate shortly
+  return [];
 }
 
 export function getUserById(id: string): User | null {
@@ -52,10 +51,6 @@ export function saveUser(user: User): void {
 
   const index = users.findIndex(u => u.id === user.id || u.username === user.username);
   if (index !== -1) {
-    // Preserve existing password if new password is empty
-    if (!user.password && users[index].password) {
-      user.password = users[index].password;
-    }
     users[index] = { ...users[index], ...user };
   } else {
     users.push(user);

@@ -15,15 +15,15 @@ function generateId(): string {
 // ===== VEHICLES =====
 
 function seedVehicles(): Vehicle[] {
-  if (typeof window === 'undefined') return SEED_VEHICLES;
+  if (typeof window === 'undefined') return [];
   const raw = localStorage.getItem(VEHICLES_KEY);
   if (raw) return JSON.parse(raw);
-  localStorage.setItem(VEHICLES_KEY, JSON.stringify(SEED_VEHICLES));
-  return SEED_VEHICLES;
+  // No localStorage data — Supabase sync will populate shortly
+  return [];
 }
 
 export function getVehicles(): Vehicle[] {
-  if (typeof window === 'undefined') return SEED_VEHICLES;
+  if (typeof window === 'undefined') return [];
   return seedVehicles();
 }
 
@@ -102,14 +102,14 @@ function isDemoDriver(d: { id: string; name?: string }): boolean {
 }
 
 function getDriverUsers(): { id: string; name: string; username: string; role: string; phone?: string; licenseClass?: string }[] {
-  if (typeof window === 'undefined') return SEED_USERS.filter(u => u.role === 'driver' && !DEMO_DRIVER_NAMES.includes(u.name));
+  if (typeof window === 'undefined') return [];
   const raw = localStorage.getItem('carflow_users');
-  if (!raw) return SEED_USERS.filter(u => u.role === 'driver' && !DEMO_DRIVER_NAMES.includes(u.name));
+  if (!raw) return [];
   try {
     const users: any[] = JSON.parse(raw);
     return users.filter(u => u.role === 'driver' && !DEMO_DRIVER_NAMES.includes(u.name));
   } catch {
-    return SEED_USERS.filter(u => u.role === 'driver' && !DEMO_DRIVER_NAMES.includes(u.name));
+    return [];
   }
 }
 

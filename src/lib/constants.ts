@@ -33,7 +33,7 @@ export const ROUTE_SUGGESTIONS = [
   'UBND Quận 7',
   'Ngân hàng Nhà nước - CN TP.HCM',
   'VP đại diện VietinBank TP.HCM',
-  'Tòa nhà VietinBank Tower',
+  'Trụ sở Chi nhánh - Nam Sài Gòn',
 ];
 
 // ===== STATUS CONFIG =====
@@ -93,26 +93,9 @@ export const BRANCH_INFO = {
   templateCode: 'Mẫu số 02/GĐNSDX',
 };
 
-// ===== SEED: USERS =====
-export const SEED_USERS: User[] = [
-  { id: 'u0', username: 'admin', password: '123456', name: 'System Admin', role: 'admin', department: 'Phòng Công nghệ Thông tin' },
-  { id: 'u1', username: 'nhanvien1', password: '123456', name: 'Nguyễn Thị Mai', role: 'staff', department: 'Phòng Kế toán' },
-  { id: 'u2', username: 'nhanvien2', password: '123456', name: 'Trần Văn Hùng', role: 'staff', department: 'Phòng Khách hàng Doanh nghiệp' },
-  { id: 'u3', username: 'truongphong', password: '123456', name: 'Lê Minh Tuấn', role: 'dept_head', department: 'Phòng Kế toán' },
-  { id: 'u4', username: 'tcth', password: '123456', name: 'Phạm Hoàng Anh', role: 'tcth', department: 'Phòng Tổ chức Tổng hợp' },
-  { id: 'u5', username: 'phogiamdoc', password: '123456', name: 'Võ Thanh Bình', role: 'director', department: 'Ban Giám đốc' },
-  { id: 'u6', username: 'giamdoc', password: '123456', name: 'Đặng Quốc Việt', role: 'director', department: 'Ban Giám đốc' },
-];
-
-// ===== SEED: VEHICLES (5 xe) =====
-export const SEED_VEHICLES: Vehicle[] = [
-  { id: 'v1', plateNumber: '51A-123.45', model: 'Toyota Camry 2.5Q', seats: 4, status: 'available', currentOdo: 45230 },
-  { id: 'v2', plateNumber: '51A-234.56', model: 'Toyota Fortuner 2.7V', seats: 7, status: 'available', currentOdo: 32100 },
-  { id: 'v3', plateNumber: '51A-345.67', model: 'Ford Transit 16 chỗ', seats: 16, status: 'available', currentOdo: 67800 },
-  { id: 'v4', plateNumber: '51A-456.78', model: 'Toyota Innova 2.0E', seats: 7, status: 'available', currentOdo: 51450 },
-  { id: 'v5', plateNumber: '51A-567.89', model: 'Hyundai Accent 1.4AT', seats: 4, status: 'maintenance', currentOdo: 28900, notes: 'Bảo dưỡng định kỳ 30.000km' },
-];
-
-// ===== SEED: DRIVERS (Rỗng - Chuẩn bị kết nối Supabase) =====
+// ===== SEED FALLBACK (Chỉ dùng khi Supabase hoàn toàn trống) =====
+// Dữ liệu thực tế được đồng bộ 100% từ Supabase Database
+export const SEED_USERS: User[] = [];
+export const SEED_VEHICLES: Vehicle[] = [];
 export const SEED_DRIVERS: Driver[] = [];
 

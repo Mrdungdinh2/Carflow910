@@ -33,22 +33,27 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
     if (isOpen) {
       const allVehicles = getVehicles();
       const allDrivers = getDrivers();
-      setVehicles(allVehicles);
-      setDrivers(allDrivers);
+      // CHỈ hiển thị xe/tài xế ở trạng thái "sẵn sàng"
+      setVehicles(allVehicles.filter(v => v.status === 'available'));
+      setDrivers(allDrivers.filter(d => d.status === 'available'));
 
+      // Tính thời gian mặc định theo local time (tránh lệch timezone)
       const now = new Date();
-      const startIso = now.toISOString().slice(0, 16);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const startIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
       const end = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-      const endIso = end.toISOString().slice(0, 16);
+      const endIso = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}`;
 
       setStartDateTime(startIso);
       setEndDateTime(endIso);
 
-      // Default select available vehicle & driver
+      // Default select first available vehicle & driver
       const availV = allVehicles.find(v => v.status === 'available');
       const availD = allDrivers.find(d => d.status === 'available');
       if (availV) setSelectedVehicleId(availV.id);
+      else setSelectedVehicleId('');
       if (availD) setSelectedDriverId(availD.id);
+      else setSelectedDriverId('');
     }
   }, [isOpen]);
 
@@ -68,6 +73,15 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
     }
     if (!destination.trim()) {
       showToast('Vui lòng nhập địa điểm / nơi đến', 'error');
+      return;
+    }
+    const minThreshold = Date.now() - 15 * 60 * 1000;
+    if (startDateTime && new Date(startDateTime).getTime() < minThreshold) {
+      showToast('Thời gian bắt đầu không thể chọn ở quá khứ (phải từ thời điểm hiện tại trở đi)', 'error');
+      return;
+    }
+    if (startDateTime && endDateTime && new Date(endDateTime) <= new Date(startDateTime)) {
+      showToast('Thời gian kết thúc phải sau thời gian bắt đầu', 'error');
       return;
     }
 
@@ -123,12 +137,19 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
               className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500/50"
             >
               <option value="" className="bg-[#121929]">-- Chọn tài xế --</option>
-              {drivers.map(d => (
-                <option key={d.id} value={d.id} className="bg-[#121929]">
-                  {d.name} ({d.phone}) - [{d.status === 'available' ? '🟢 Sẵn sàng' : '🟡 Đang bận/Nghỉ'}]
-                </option>
-              ))}
+              {drivers.length === 0 ? (
+                <option disabled className="bg-[#121929]">⚠ Không có tài xế sẵn sàng</option>
+              ) : (
+                drivers.map(d => (
+                  <option key={d.id} value={d.id} className="bg-[#121929]">
+                    {d.name} ({d.phone}) - [🟢 Sẵn sàng]
+                  </option>
+                ))
+              )}
             </select>
+            {drivers.length === 0 && (
+              <p className="text-[10px] text-red-400 mt-1">⚠ Tất cả tài xế đang bận hoặc nghỉ phép. Không thể giao nhiệm vụ.</p>
+            )}
           </div>
 
           {/* Vehicle Selection */}
@@ -143,12 +164,19 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
               className="w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500/50"
             >
               <option value="" className="bg-[#121929]">-- Chọn xe ô tô --</option>
-              {vehicles.map(v => (
-                <option key={v.id} value={v.id} className="bg-[#121929]">
-                  {v.plateNumber} • {v.model} ({v.seats} chỗ) - [{v.status === 'available' ? '🟢 Sẵn sàng' : '🟡 Đang dùng/Bảo trì'}]
-                </option>
-              ))}
+              {vehicles.length === 0 ? (
+                <option disabled className="bg-[#121929]">⚠ Không có xe sẵn sàng</option>
+              ) : (
+                vehicles.map(v => (
+                  <option key={v.id} value={v.id} className="bg-[#121929]">
+                    {v.plateNumber} • {v.model} ({v.seats} chỗ) - [🟢 Sẵn sàng]
+                  </option>
+                ))
+              )}
             </select>
+            {vehicles.length === 0 && (
+              <p className="text-[10px] text-red-400 mt-1">⚠ Tất cả xe đang bận hoặc bảo trì. Không thể giao nhiệm vụ.</p>
+            )}
           </div>
 
           {/* Destination */}
@@ -177,6 +205,11 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
                 required
                 value={startDateTime}
                 onChange={(e) => setStartDateTime(e.target.value)}
+                min={(() => {
+                  const now = new Date();
+                  const pad = (n: number) => String(n).padStart(2, '0');
+                  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                })()}
                 className="w-full px-2.5 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500/50"
               />
             </div>
@@ -189,6 +222,11 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
                 required
                 value={endDateTime}
                 onChange={(e) => setEndDateTime(e.target.value)}
+                min={startDateTime || (() => {
+                  const now = new Date();
+                  const pad = (n: number) => String(n).padStart(2, '0');
+                  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                })()}
                 className="w-full px-2.5 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500/50"
               />
             </div>

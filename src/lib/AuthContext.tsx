@@ -6,7 +6,7 @@ import { getCurrentUser, login as authLogin, logout as authLogout } from '@/lib/
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => User | null;
+  login: (username: string, password: string) => Promise<User | null>;
   logout: () => void;
 }
 
@@ -24,8 +24,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
-  const login = useCallback((username: string, password: string) => {
-    const loggedInUser = authLogin(username, password);
+  const login = useCallback(async (username: string, password: string) => {
+    const loggedInUser = await authLogin(username, password);
     if (loggedInUser) {
       setUser(loggedInUser);
     }

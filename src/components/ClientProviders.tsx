@@ -62,15 +62,13 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // Periodic sync every 15 seconds as fallback (reduced from 30s for faster sync)
-    const intervalId = setInterval(() => {
-      fetchAndSyncAllFromSupabase();
-    }, 15_000);
+    // NOTE: Polling đã bị loại bỏ (trước đó SELECT * mỗi 15s trên 5 bảng).
+    // Supabase Realtime subscription + visibility change handler là đủ để đồng bộ dữ liệu.
+    // Polling gây lãng phí tài nguyên: N users × 5 bảng × 4 lần/phút = 20N queries/phút.
 
     return () => {
       channel.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibility);
-      clearInterval(intervalId);
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     };
   }, [debouncedSync]);

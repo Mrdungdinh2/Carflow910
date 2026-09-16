@@ -11,6 +11,83 @@ const USERS_KEY = 'carflow_users';
 const ACTIVITY_KEY = 'carflow_activity';
 const DEPARTMENTS_KEY = 'carflow_departments';
 
+// Giới hạn số lượng requests lưu trong localStorage để tránh vượt 5MB
+const MAX_LOCAL_REQUESTS = 200;
+
+/**
+ * Ghi localStorage an toàn — bắt QuotaExceededError thay vì crash app.
+ * Nếu hết dung lượng, thử xóa activity logs (ít quan trọng nhất) rồi thử lại.
+ */
+function safeLocalStorageSet(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+      console.warn(`[CarFlow] localStorage đầy khi ghi key "${key}". Đang dọn dẹp...`);
+      // Dọn activity logs trước (ít quan trọng, có thể tái tạo từ Supabase)
+      try {
+        localStorage.removeItem(ACTIVITY_KEY);
+        localStorage.setItem(key, value);
+        console.log(`[CarFlow] Đã dọn activity logs và ghi lại thành công.`);
+        return true;
+      } catch {
+        console.error(`[CarFlow] localStorage vẫn đầy sau khi dọn dẹp. Key: "${key}", Size: ${(value.length / 1024).toFixed(1)}KB`);
+        return false;
+      }
+    }
+    throw err; // Re-throw nếu không phải QuotaExceededError
+  }
+}
+
+/**
+ * Chuyển datetime-local string thành chuỗi có timezone để Supabase hiểu đúng.
+ * Input:  "2026-09-16T12:00" (local time, từ datetime-local input)
+ * Output: "2026-09-16T12:00:00+07:00" (Supabase hiểu đúng là giờ Việt Nam)
+ *
+ * Nếu chuỗi đã có timezone → giữ nguyên.
+ */
+function localDateTimeToTimestamptz(localStr: string): string {
+  if (!localStr) return localStr;
+  // Đã có timezone marker → giữ nguyên
+  if (/[Z+]/.test(localStr.slice(19)) || (localStr.length > 19 && localStr[19] === '-')) {
+    return localStr;
+  }
+  // Lấy offset timezone hiện tại của browser (VD: UTC+7 → offset = -420 phút)
+  const offsetMinutes = new Date().getTimezoneOffset(); // -420 cho UTC+7
+  const sign = offsetMinutes <= 0 ? '+' : '-';
+  const absOffset = Math.abs(offsetMinutes);
+  const hh = String(Math.floor(absOffset / 60)).padStart(2, '0');
+  const mm = String(absOffset % 60).padStart(2, '0');
+  // Đảm bảo có seconds
+  const base = localStr.length === 16 ? `${localStr}:00` : localStr;
+  return `${base}${sign}${hh}:${mm}`;
+}
+
+/**
+ * Chuyển Supabase timestamptz về dạng datetime-local string (YYYY-MM-DDTHH:MM).
+ * Input:  "2026-09-16T05:00:00+00:00" hoặc "2026-09-16T12:00:00+07:00"
+ * Output: "2026-09-16T12:00" (giờ local, khớp với datetime-local input)
+ *
+ * Nếu chuỗi đã là dạng datetime-local (không có timezone) → giữ nguyên.
+ */
+function timestamptzToLocalDateTime(tsStr: string): string {
+  if (!tsStr) return tsStr;
+  // Nếu chuỗi ngắn và không có timezone → đã là local, giữ nguyên
+  if (tsStr.length <= 19 && !/[Z+]/.test(tsStr.slice(16))) {
+    return tsStr.slice(0, 16); // Đảm bảo format "YYYY-MM-DDTHH:MM"
+  }
+  // Có timezone → dùng Date để convert sang local
+  const d = new Date(tsStr);
+  if (isNaN(d.getTime())) return tsStr;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const mins = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${mins}`;
+}
+
 // Mapping helper functions between Supabase snake_case and Frontend camelCase
 export function mapRequestFromDb(db: any): VehicleRequest {
   return {
@@ -20,8 +97,9 @@ export function mapRequestFromDb(db: any): VehicleRequest {
     department: db.department || '',
     vehicleCount: db.vehicle_count || 1,
     personnel: Array.isArray(db.personnel) ? db.personnel : JSON.parse(db.personnel || '[]'),
-    startDateTime: db.start_date_time || '',
-    endDateTime: db.end_date_time || '',
+    // Convert Supabase timestamptz → local datetime-local format
+    startDateTime: timestamptzToLocalDateTime(db.start_date_time || ''),
+    endDateTime: timestamptzToLocalDateTime(db.end_date_time || ''),
     pickupLocation: db.pickup_location || '',
     destination: db.destination || '',
     reason: db.reason || '',
@@ -44,8 +122,9 @@ export function mapRequestToDb(req: Partial<VehicleRequest>): any {
     department: req.department,
     vehicle_count: req.vehicleCount || 1,
     personnel: req.personnel || [],
-    start_date_time: req.startDateTime,
-    end_date_time: req.endDateTime,
+    // Convert local datetime-local → timestamptz với timezone offset
+    start_date_time: localDateTimeToTimestamptz(req.startDateTime || ''),
+    end_date_time: localDateTimeToTimestamptz(req.endDateTime || ''),
     pickup_location: req.pickupLocation,
     destination: req.destination,
     reason: req.reason,
@@ -107,7 +186,7 @@ export function mapUserFromDb(db: any): User {
   return {
     id: db.id,
     username: db.username,
-    password: db.password,
+    // password is NEVER sent to client — handled server-side only
     name: db.name,
     role: db.role,
     department: db.department,
@@ -118,7 +197,7 @@ export function mapUserToDb(u: User): any {
   return {
     id: u.id,
     username: u.username,
-    password: u.password,
+    // password is NOT managed from client — use /api/auth/change-password instead
     name: u.name,
     role: u.role,
     department: u.department,
@@ -134,8 +213,8 @@ export async function fetchAndSyncAllFromSupabase(): Promise<boolean> {
   try {
     let hasChanges = false;
 
-    // 1. Fetch Users - ALWAYS overwrite localStorage with Supabase data
-    const { data: usersData, error: usersError } = await supabase.from('users').select('*').order('username');
+    // 1. Fetch Users — EXCLUDE password fields (security: passwords stay server-side)
+    const { data: usersData, error: usersError } = await supabase.from('users').select('id, username, name, role, department').order('username');
     if (usersError) {
       console.error('[CarFlow Sync] Error fetching users:', usersError.message);
     } else if (usersData && usersData.length > 0) {
@@ -146,7 +225,7 @@ export async function fetchAndSyncAllFromSupabase(): Promise<boolean> {
         hasChanges = true;
       }
       // ALWAYS write - Supabase is the source of truth
-      localStorage.setItem(USERS_KEY, incoming);
+      safeLocalStorageSet(USERS_KEY, incoming);
     }
 
     // 2. Fetch Vehicles
@@ -160,7 +239,7 @@ export async function fetchAndSyncAllFromSupabase(): Promise<boolean> {
       if (current !== incoming) {
         hasChanges = true;
       }
-      localStorage.setItem(VEHICLES_KEY, incoming);
+      safeLocalStorageSet(VEHICLES_KEY, incoming);
     }
 
     // 3. Fetch Drivers
@@ -174,7 +253,7 @@ export async function fetchAndSyncAllFromSupabase(): Promise<boolean> {
       if (current !== incoming) {
         hasChanges = true;
       }
-      localStorage.setItem(DRIVERS_KEY, incoming);
+      safeLocalStorageSet(DRIVERS_KEY, incoming);
     }
 
     // 4. Fetch Vehicle Requests
@@ -182,13 +261,19 @@ export async function fetchAndSyncAllFromSupabase(): Promise<boolean> {
     if (requestsError) {
       console.error('[CarFlow Sync] Error fetching requests:', requestsError.message);
     } else if (requestsData) {
-      const requests = requestsData.map(mapRequestFromDb);
+      const allRequests = requestsData.map(mapRequestFromDb);
+      // Chỉ giữ MAX_LOCAL_REQUESTS gần nhất trong localStorage để tránh vượt 5MB
+      // Requests cũ hơn vẫn nằm trong Supabase, có thể query khi cần xem lịch sử
+      const requests = allRequests.slice(0, MAX_LOCAL_REQUESTS);
+      if (allRequests.length > MAX_LOCAL_REQUESTS) {
+        console.log(`[CarFlow Sync] Giới hạn localStorage: giữ ${MAX_LOCAL_REQUESTS}/${allRequests.length} requests gần nhất`);
+      }
       const incoming = JSON.stringify(requests);
       const current = localStorage.getItem(REQUESTS_KEY);
       if (current !== incoming) {
         hasChanges = true;
       }
-      localStorage.setItem(REQUESTS_KEY, incoming);
+      safeLocalStorageSet(REQUESTS_KEY, incoming);
     }
 
     // 5. Fetch Departments
@@ -202,7 +287,7 @@ export async function fetchAndSyncAllFromSupabase(): Promise<boolean> {
       if (current !== incoming) {
         hasChanges = true;
       }
-      localStorage.setItem(DEPARTMENTS_KEY, incoming);
+      safeLocalStorageSet(DEPARTMENTS_KEY, incoming);
     }
 
     // Dispatch custom event for UI re-render if data changed
@@ -222,9 +307,75 @@ export async function fetchAndSyncAllFromSupabase(): Promise<boolean> {
 export async function pushRequestToSupabase(req: VehicleRequest): Promise<void> {
   if (!isSupabaseConfigured || !supabase) return;
   try {
+    // 1. Ensure referenced driver, vehicle, and user exist in Supabase if present in local state
+    if (typeof window !== 'undefined') {
+      if (req.assignedDriverId) {
+        try {
+          const { getDrivers } = await import('./vehicleStorage');
+          const drivers = getDrivers();
+          const driver = drivers.find(d => d.id === req.assignedDriverId);
+          if (driver) await pushDriverToSupabase(driver);
+        } catch (e) {
+          console.warn('[CarFlow Push] Auto-push driver warning:', e);
+        }
+      }
+      if (req.assignedVehicleId) {
+        try {
+          const { getVehicles } = await import('./vehicleStorage');
+          const vehicles = getVehicles();
+          const vehicle = vehicles.find(v => v.id === req.assignedVehicleId);
+          if (vehicle) await pushVehicleToSupabase(vehicle);
+        } catch (e) {
+          console.warn('[CarFlow Push] Auto-push vehicle warning:', e);
+        }
+      }
+      if (req.requesterId) {
+        try {
+          const { getUsers } = await import('./userStorage');
+          const users = getUsers();
+          const user = users.find(u => u.id === req.requesterId);
+          if (user) await pushUserToSupabase(user);
+        } catch (e) {
+          console.warn('[CarFlow Push] Auto-push user warning:', e);
+        }
+      }
+    }
+
     const payload = mapRequestToDb(req);
-    const { error } = await supabase.from('vehicle_requests').upsert(payload);
-    if (error) console.error('[CarFlow Push] Request upsert error:', error.message, error.details);
+    let { error } = await supabase.from('vehicle_requests').upsert(payload);
+
+    // 2. If FK error occurs (code 23503 or foreign key constraint violation), auto-heal by setting missing FK to null and retrying
+    if (error && (error.code === '23503' || error.message?.includes('foreign key constraint'))) {
+      console.warn('[CarFlow Push] FK constraint violation detected:', error.message);
+      
+      let retried = false;
+      if (error.message.includes('assigned_driver_id_fkey')) {
+        console.warn('[CarFlow Push] Driver ID not found in Supabase drivers table. Retrying with null assigned_driver_id...');
+        payload.assigned_driver_id = null;
+        retried = true;
+      }
+      if (error.message.includes('assigned_vehicle_id_fkey')) {
+        console.warn('[CarFlow Push] Vehicle ID not found in Supabase vehicles table. Retrying with null assigned_vehicle_id...');
+        payload.assigned_vehicle_id = null;
+        retried = true;
+      }
+      if (error.message.includes('requester_id_fkey')) {
+        console.warn('[CarFlow Push] Requester ID not found in Supabase users table. Retrying with null requester_id...');
+        payload.requester_id = null;
+        retried = true;
+      }
+
+      if (retried) {
+        const retryResult = await supabase.from('vehicle_requests').upsert(payload);
+        if (retryResult.error) {
+          console.error('[CarFlow Push] Request upsert retry error:', retryResult.error.message);
+        } else {
+          console.log('[CarFlow Push] Request upsert retry succeeded after FK auto-heal');
+        }
+      }
+    } else if (error) {
+      console.error('[CarFlow Push] Request upsert error:', error.message, error.details);
+    }
   } catch (err) {
     console.error('[CarFlow Push] Request exception:', err);
   }
