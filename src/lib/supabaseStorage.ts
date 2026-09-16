@@ -197,7 +197,9 @@ export function mapUserToDb(u: User): any {
   return {
     id: u.id,
     username: u.username,
-    // password is NOT managed from client — use /api/auth/change-password instead
+    // Pre-migration: cột password vẫn NOT NULL → cần giá trị placeholder
+    // Mật khẩu thực tế được quản lý qua /api/auth/change-password (bcrypt hash)
+    password: '***managed-by-api***',
     name: u.name,
     role: u.role,
     department: u.department,
@@ -404,9 +406,25 @@ export async function pushDriverToSupabase(d: Driver): Promise<void> {
 export async function pushUserToSupabase(u: User): Promise<void> {
   if (!isSupabaseConfigured || !supabase) return;
   try {
-    const payload = mapUserToDb(u);
-    const { error } = await supabase.from('users').upsert(payload, { onConflict: 'username' });
-    if (error) console.error('[CarFlow Push] User upsert error:', error.message, error.details);
+    // Check if user already exists in Supabase
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', u.username)
+      .single();
+
+    if (existing) {
+      // UPDATE existing user — do NOT touch password column
+      const { error } = await supabase.from('users')
+        .update({ name: u.name, role: u.role, department: u.department })
+        .eq('username', u.username);
+      if (error) console.error('[CarFlow Push] User update error:', error.message, error.details);
+    } else {
+      // INSERT new user — placeholder password (real password set via /api/auth/change-password)
+      const payload = mapUserToDb(u);
+      const { error } = await supabase.from('users').insert(payload);
+      if (error) console.error('[CarFlow Push] User insert error:', error.message, error.details);
+    }
   } catch (err) {
     console.error('[CarFlow Push] User exception:', err);
   }
