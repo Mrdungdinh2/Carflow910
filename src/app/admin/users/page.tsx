@@ -110,7 +110,7 @@ export default function UsersAdmin() {
         }
       }
 
-      showToast(isEdit ? 'Đã cập nhật người dùng!' : 'Đã tạo người dùng mới!', 'success');
+      showToast(isEdit ? 'Đã cập nhật người dùng!' : 'User đã được tạo thành công!', 'success');
       refreshData();
       setShowModal(false);
     } catch {
