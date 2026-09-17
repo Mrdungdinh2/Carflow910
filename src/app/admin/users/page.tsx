@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { GlassCard } from '@/components/GlassCard';
-import { getUsers, saveUser, deleteUser } from '@/lib/userStorage';
+import { getUsers, deleteUser } from '@/lib/userStorage';
 import type { User, UserRole } from '@/lib/types';
 import { getDepartments } from '@/lib/departmentStorage';
 import { useAuth } from '@/lib/AuthContext';
@@ -32,6 +32,9 @@ export default function UsersAdmin() {
   });
   const [isEdit, setIsEdit] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showAdminAuth, setShowAdminAuth] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [pendingAction, setPendingAction] = useState<'save' | null>(null);
 
   const refreshData = () => {
     setUsers(getUsers());
@@ -68,7 +71,7 @@ export default function UsersAdmin() {
     );
   }
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSaveWithAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.username?.trim() || !formData.name?.trim()) {
       showToast('Vui lòng điền tên đăng nhập và họ tên', 'error');
@@ -80,37 +83,87 @@ export default function UsersAdmin() {
       return;
     }
 
+    // Prompt for admin password verification
+    setPendingAction('save');
+    setAdminPassword('');
+    setShowAdminAuth(true);
+  };
+
+  const executeAdminAction = async () => {
+    if (!adminPassword.trim()) {
+      showToast('Vui lòng nhập mật khẩu Admin', 'error');
+      return;
+    }
+
+    if (pendingAction === 'save') {
+      await executeSave();
+    }
+    setShowAdminAuth(false);
+    setAdminPassword('');
+    setPendingAction(null);
+  };
+
+  const executeSave = async () => {
     setSaving(true);
     try {
-      // Save user info (without password) to localStorage + Supabase
-      saveUser({
-        id: formData.id || 'usr_' + Date.now(),
-        username: formData.username.trim(),
-        name: formData.name.trim(),
-        role: (formData.role as UserRole) || 'staff',
-        department: formData.department || '',
-      } as User);
+      if (isEdit) {
+        // BUG #2 Fix: Edit mode — use existing ID, never generate new
+        if (!formData.id) {
+          showToast('Lỗi: Không tìm thấy ID người dùng để cập nhật', 'error');
+          setSaving(false);
+          return;
+        }
 
-      // If password provided, set it via secure server-side API
-      if (formData.newPassword?.trim()) {
-        const pwRes = await fetch('/api/auth/change-password', {
+        // BUG #1 Fix: Atomic update via server API
+        const res = await fetch('/api/users/update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            username: formData.username.trim(),
-            newPassword: formData.newPassword.trim(),
-            adminOverride: true,
+            id: formData.id,
+            username: formData.username!.trim(),
+            name: formData.name!.trim(),
+            role: formData.role || 'staff',
+            department: formData.department || '',
+            newPassword: formData.newPassword?.trim() || undefined,
+            adminUsername: currentUser!.username,
+            adminPassword: adminPassword.trim(),
           }),
         });
-        if (!pwRes.ok) {
-          const err = await pwRes.json().catch(() => ({}));
-          showToast(err.error || 'Lỗi khi đặt mật khẩu', 'error');
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          showToast(err.error || 'Lỗi cập nhật người dùng', 'error');
+          setSaving(false);
+          return;
+        }
+      } else {
+        // BUG #1 Fix: Create via atomic API (hash password correctly)
+        const res = await fetch('/api/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: 'usr_' + Date.now(),
+            username: formData.username!.trim(),
+            password: formData.newPassword?.trim() || '123456',
+            name: formData.name!.trim(),
+            role: formData.role || 'staff',
+            department: formData.department || '',
+            adminUsername: currentUser!.username,
+            adminPassword: adminPassword.trim(),
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          showToast(err.error || 'Lỗi tạo tài khoản', 'error');
           setSaving(false);
           return;
         }
       }
 
       showToast(isEdit ? 'Đã cập nhật người dùng!' : 'User đã được tạo thành công!', 'success');
+      // Trigger Supabase sync to refresh local data
+      window.dispatchEvent(new Event('carflow_data_changed'));
       refreshData();
       setShowModal(false);
     } catch {
@@ -134,7 +187,7 @@ export default function UsersAdmin() {
   };
 
   const confirmDelete = () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || !currentUser) return;
     if (deleteTarget.username === currentUser.username) {
       showToast('Không thể xóa tài khoản của chính bạn!', 'error');
       setDeleteTarget(null);
@@ -233,7 +286,7 @@ export default function UsersAdmin() {
                   </button>
                   <button
                     onClick={() => setDeleteTarget(u)}
-                    disabled={u.username === currentUser.username}
+                    disabled={currentUser ? u.username === currentUser.username : false}
                     className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-30 disabled:pointer-events-none"
                     title="Xóa"
                   >
@@ -255,7 +308,7 @@ export default function UsersAdmin() {
               {isEdit ? 'Cập nhật Người dùng' : 'Tạo Người dùng mới'}
             </h2>
 
-            <form onSubmit={handleSave} className="space-y-3.5">
+            <form onSubmit={handleSaveWithAuth} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Tên đăng nhập (username)</label>
                 <input
@@ -357,6 +410,54 @@ export default function UsersAdmin() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {/* Admin Authentication Modal */}
+      {showAdminAuth && (
+        <div className="fixed inset-0 bg-[#090d16]/90 backdrop-blur-xl z-[110] flex items-center justify-center p-4">
+          <GlassCard className="w-full max-w-sm p-6 space-y-4 border-amber-500/30 shadow-2xl bg-[#121929] rounded-3xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/10">
+                <Lock className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Xác thực Admin</h3>
+                <p className="text-xs text-slate-400">Nhập mật khẩu Admin để xác nhận thao tác</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Mật khẩu tài khoản: <span className="text-cyan-400 font-mono">@{currentUser?.username}</span>
+              </label>
+              <input
+                type="password"
+                value={adminPassword}
+                onChange={e => setAdminPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && executeAdminAction()}
+                className="glass-input w-full text-xs"
+                placeholder="Nhập mật khẩu Admin..."
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowAdminAuth(false); setAdminPassword(''); setPendingAction(null); }}
+                className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={executeAdminAction}
+                disabled={saving}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-xs font-semibold shadow-lg shadow-amber-500/20 transition-all disabled:opacity-50"
+              >
+                {saving ? 'Đang xử lý...' : 'Xác nhận'}
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
     </div>
   );
 }

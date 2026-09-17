@@ -55,7 +55,11 @@ export async function POST(request: NextRequest) {
       if (user.password_hash) {
         currentValid = await bcrypt.compare(currentPassword, user.password_hash);
       } else if (user.password) {
-        currentValid = user.password === currentPassword;
+        if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+          currentValid = await bcrypt.compare(currentPassword, user.password);
+        } else {
+          currentValid = user.password === currentPassword;
+        }
       }
 
       if (!currentValid) {
@@ -64,18 +68,55 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         );
       }
+    } else {
+      // Admin override — verify caller is actually an admin
+      const { adminUsername, adminPassword } = body;
+      if (!adminUsername || !adminPassword) {
+        return NextResponse.json(
+          { error: 'Yêu cầu xác thực tài khoản Admin để đổi mật khẩu người dùng' },
+          { status: 401 }
+        );
+      }
+
+      const { data: adminUser, error: adminErr } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('username', adminUsername)
+        .single();
+
+      if (adminErr || !adminUser || adminUser.role !== 'admin') {
+        return NextResponse.json(
+          { error: 'Tài khoản không có quyền Admin' },
+          { status: 403 }
+        );
+      }
+
+      let adminPwValid = false;
+      if (adminUser.password_hash) {
+        adminPwValid = await bcrypt.compare(adminPassword, adminUser.password_hash);
+      } else if (adminUser.password) {
+        if (adminUser.password.startsWith('$2a$') || adminUser.password.startsWith('$2b$')) {
+          adminPwValid = await bcrypt.compare(adminPassword, adminUser.password);
+        } else {
+          adminPwValid = adminUser.password === adminPassword;
+        }
+      }
+
+      if (!adminPwValid) {
+        return NextResponse.json(
+          { error: 'Mật khẩu Admin không chính xác' },
+          { status: 401 }
+        );
+      }
     }
 
     // Hash new password
     const newHash = await bcrypt.hash(newPassword, 10);
 
-    // Update in database
+    // Update in database — store hash in `password` column (always exists, NOT NULL)
     const { error: updateErr } = await supabaseAdmin
       .from('users')
-      .update({ 
-        password_hash: newHash,
-        password: null,  // Clear plaintext password
-      })
+      .update({ password: newHash })
       .eq('id', user.id);
 
     if (updateErr) {

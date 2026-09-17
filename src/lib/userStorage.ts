@@ -6,8 +6,6 @@ import { pushUserToSupabase, deleteUserFromSupabase } from './supabaseStorage';
 
 const USERS_KEY = 'carflow_users';
 
-const DEMO_DRIVER_NAMES = ['Nguyễn Văn Tâm', 'Trần Minh Đức', 'Lê Hoàng Phúc', 'Phạm Quốc Bảo'];
-
 /**
  * Seed users ONLY if localStorage is completely empty AND no Supabase data exists.
  * This is called lazily, not on module import.
@@ -26,8 +24,7 @@ export function getUsers(): User[] {
   const raw = localStorage.getItem(USERS_KEY);
   if (raw) {
     try {
-      const parsed: User[] = JSON.parse(raw);
-      return parsed.filter(u => !DEMO_DRIVER_NAMES.includes(u.name));
+      return JSON.parse(raw) as User[];
     } catch {
       return [];
     }

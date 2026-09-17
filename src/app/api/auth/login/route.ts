@@ -75,27 +75,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password — support both bcrypt hash AND plaintext (migration period)
+    // Check password — support bcrypt hash in both password_hash and password columns
     let passwordValid = false;
 
     if (user.password_hash) {
-      // New format: bcrypt hash (post-migration)
+      // Post-migration format: dedicated password_hash column
       passwordValid = await bcrypt.compare(password, user.password_hash);
     } else if (user.password) {
-      // Legacy format: plaintext (pre-migration)
-      passwordValid = user.password === password;
+      // Check if password column contains a bcrypt hash (starts with $2a$ or $2b$)
+      if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+        passwordValid = await bcrypt.compare(password, user.password);
+      } else {
+        // Legacy plaintext password
+        passwordValid = user.password === password;
 
-      // Auto-migrate: hash the plaintext password for next time
-      if (passwordValid) {
-        try {
-          const hash = await bcrypt.hash(password, 10);
-          await supabaseAdmin
-            .from('users')
-            .update({ password_hash: hash })
-            .eq('id', user.id);
-        } catch (migrateErr) {
-          // Silently fail if password_hash column doesn't exist yet — migration not run
-          console.warn('[API /auth/login] Auto-migrate skipped (column may not exist yet):', migrateErr);
+        // Auto-migrate: hash plaintext password for next login
+        if (passwordValid) {
+          try {
+            const hash = await bcrypt.hash(password, 10);
+            await supabaseAdmin
+              .from('users')
+              .update({ password: hash })
+              .eq('id', user.id);
+          } catch (migrateErr) {
+            console.warn('[API /auth/login] Auto-migrate skipped:', migrateErr);
+          }
         }
       }
     }

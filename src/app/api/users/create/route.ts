@@ -2,6 +2,10 @@
  * API Route: POST /api/users/create
  * Server-side user creation — Hash password before inserting into DB
  * Used by Admin user management page
+ * 
+ * SECURITY:
+ * - Requires admin credentials (adminUsername + adminPassword) for verification
+ * - Password is hashed with bcrypt before saving
  */
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
@@ -10,12 +14,51 @@ import { supabaseAdmin } from '@/lib/supabaseServer';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, username, password, name, role, department } = body;
+    const { id, username, password, name, role, department, adminUsername, adminPassword } = body;
 
     if (!username?.trim() || !name?.trim()) {
       return NextResponse.json(
         { error: 'Thiếu tên đăng nhập hoặc họ tên' },
         { status: 400 }
+      );
+    }
+
+    // Verify admin credentials
+    if (!adminUsername || !adminPassword) {
+      return NextResponse.json(
+        { error: 'Yêu cầu xác thực tài khoản Admin để tạo người dùng' },
+        { status: 401 }
+      );
+    }
+
+    const { data: adminUser, error: adminErr } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('username', adminUsername)
+      .single();
+
+    if (adminErr || !adminUser || adminUser.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Tài khoản không có quyền Admin' },
+        { status: 403 }
+      );
+    }
+
+    let adminPwValid = false;
+    if (adminUser.password_hash) {
+      adminPwValid = await bcrypt.compare(adminPassword, adminUser.password_hash);
+    } else if (adminUser.password) {
+      if (adminUser.password.startsWith('$2a$') || adminUser.password.startsWith('$2b$')) {
+        adminPwValid = await bcrypt.compare(adminPassword, adminUser.password);
+      } else {
+        adminPwValid = adminUser.password === adminPassword;
+      }
+    }
+
+    if (!adminPwValid) {
+      return NextResponse.json(
+        { error: 'Mật khẩu Admin không chính xác' },
+        { status: 401 }
       );
     }
 
@@ -38,13 +81,13 @@ export async function POST(request: NextRequest) {
       ? await bcrypt.hash(password.trim(), 10)
       : await bcrypt.hash('123456', 10); // Default password
 
-    // Insert user
+    // Insert user — store bcrypt hash in `password` column (always exists, NOT NULL)
     const { error: insertErr } = await supabaseAdmin
       .from('users')
       .insert({
         id: id || `usr_${Date.now()}`,
         username: username.trim(),
-        password_hash: passwordHash,
+        password: passwordHash,
         name: name.trim(),
         role: role || 'staff',
         department: department || '',
@@ -61,3 +104,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Lỗi hệ thống' }, { status: 500 });
   }
 }
+
