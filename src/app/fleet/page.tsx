@@ -10,6 +10,8 @@ import { Vehicle, Driver, FleetStats } from '@/lib/types';
 import { VehicleCard } from '@/components/VehicleCard';
 import { DriverCard } from '@/components/DriverCard';
 import { DirectTaskModal } from '@/components/DirectTaskModal';
+import { DriverEditModal } from '@/components/DriverEditModal';
+import { DriverTripHistoryModal } from '@/components/DriverTripHistoryModal';
 
 export default function FleetPage() {
   const { user } = useAuth();
@@ -20,6 +22,10 @@ export default function FleetPage() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [stats, setStats] = useState<FleetStats | null>(null);
   const [showDirectModal, setShowDirectModal] = useState(false);
+
+  // Driver modals state
+  const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+  const [historyDriver, setHistoryDriver] = useState<Driver | null>(null);
 
   const canManage = user && ['tcth', 'admin'].includes(user.role);
 
@@ -184,7 +190,11 @@ export default function FleetPage() {
           <div className="grid gap-3">
             {drivers.map((d, i) => (
               <div key={d.id} style={{ animationDelay: `${i * 100}ms` }} className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
-                <DriverCard driver={d} />
+                <DriverCard
+                  driver={d}
+                  onEditPhone={canManage ? (driverToEdit) => setEditingDriver(driverToEdit) : undefined}
+                  onViewHistory={(driverToView) => setHistoryDriver(driverToView)}
+                />
                 {canManage && (
                   <div className="mt-2 flex items-center justify-end gap-2">
                     <span className="text-[10px] text-slate-400">Đổi trạng thái:</span>
@@ -211,6 +221,21 @@ export default function FleetPage() {
         isOpen={showDirectModal}
         onClose={() => setShowDirectModal(false)}
         onSuccess={refreshData}
+      />
+
+      {/* Driver Edit Phone & Details Modal */}
+      <DriverEditModal
+        driver={editingDriver}
+        isOpen={!!editingDriver}
+        onClose={() => setEditingDriver(null)}
+        onSuccess={refreshData}
+      />
+
+      {/* Driver Trip History Modal */}
+      <DriverTripHistoryModal
+        driver={historyDriver}
+        isOpen={!!historyDriver}
+        onClose={() => setHistoryDriver(null)}
       />
     </div>
   );

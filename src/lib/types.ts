@@ -142,3 +142,16 @@ export interface FleetStats {
   totalDrivers: number;
   availableDrivers: number;
 }
+
+// ===== DRIVER STATS =====
+export interface DriverStats {
+  driverId: string;
+  completedTrips: number;
+  activeTrips: number;
+  totalTrips: number;
+}
+
+// ===== TIME FILTER TYPES =====
+export type TimeFilterPreset = 'all' | 'today' | 'this_week' | 'this_month' | 'last_month' | 'custom';
+export type TimeFilterTarget = 'startDateTime' | 'createdAt';
+

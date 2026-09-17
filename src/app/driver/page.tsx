@@ -1,25 +1,38 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Truck, Clock, PlayCircle, CheckCircle2, Car } from 'lucide-react';
+import { Truck, Clock, PlayCircle, CheckCircle2, Car, Phone, Pencil, Award } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useAuth } from '@/lib/AuthContext';
 import { getRequests } from '@/lib/storage';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
-import { getVehicles } from '@/lib/vehicleStorage';
-import type { VehicleRequest } from '@/lib/types';
+import { getVehicles, getDriverById } from '@/lib/vehicleStorage';
+import { DriverEditModal } from '@/components/DriverEditModal';
+import type { VehicleRequest, Driver } from '@/lib/types';
 
 export default function DriverDashboardPage() {
   const { user } = useAuth();
   const [requests, setRequests] = useState<VehicleRequest[]>([]);
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'in_progress' | 'completed'>('pending');
+  const [editingSelf, setEditingSelf] = useState<Driver | null>(null);
 
   const vehicles = useMemo(() => {
     if (typeof window !== 'undefined') return getVehicles();
     return [];
   }, [mounted]);
+
+  const currentDriver = useMemo(() => {
+    if (!user) return null;
+    return getDriverById(user.id) || {
+      id: user.id,
+      name: user.name,
+      phone: '0901234567',
+      licenseClass: 'B2',
+      status: 'available' as const
+    };
+  }, [user, mounted]);
 
   useEffect(() => {
     setMounted(true);
@@ -32,7 +45,13 @@ export default function DriverDashboardPage() {
 
   const driverRequests = useMemo(() => {
     if (!user) return [];
-    return requests.filter(r => r.assignedDriverId === user.id);
+    const uId = user.id.toLowerCase();
+    const uName = user.name.toLowerCase();
+    return requests.filter(r => {
+      if (!r.assignedDriverId) return false;
+      const assigned = r.assignedDriverId.toLowerCase();
+      return assigned === uId || assigned === uName;
+    });
   }, [requests, user]);
 
   const pendingRequests = useMemo(() => driverRequests.filter(r => r.status === 'tcth_approved'), [driverRequests]);
@@ -57,15 +76,46 @@ export default function DriverDashboardPage() {
 
   return (
     <div className="page-container pb-24">
-      <header className="mb-6 animate-slide-up">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
-            <Truck className="w-5 h-5 text-white" />
+      <header className="mb-4 animate-slide-up">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <Truck className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-white">Nhiệm vụ của tôi</h1>
+              <p className="text-[10px] text-slate-400">Tài xế: <span className="text-white font-semibold">{user.name}</span></p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-white">Nhiệm vụ của tôi</h1>
-            <p className="text-[10px] text-slate-400">Quản lý các chuyến đi được phân công</p>
-          </div>
+
+          <button
+            onClick={() => currentDriver && setEditingSelf(currentDriver)}
+            className="flex items-center gap-1 text-xs text-slate-300 bg-white/[0.06] hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-xl transition-all"
+            title="Đổi số điện thoại cá nhân"
+          >
+            <Phone className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="font-mono">{currentDriver?.phone}</span>
+            <Pencil className="w-3 h-3 text-slate-400 ml-1" />
+          </button>
+        </div>
+
+        {/* Driver Personal Achievement Stats Banner */}
+        <div className="grid grid-cols-3 gap-2 text-center my-4">
+          <GlassCard className="p-3 bg-emerald-500/10 border-emerald-500/20">
+            <div className="text-xl font-bold text-emerald-400">{completedRequests.length}</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 font-medium flex items-center justify-center gap-1">
+              <Award className="w-3 h-3 text-emerald-400" />
+              Đã hoàn thành
+            </div>
+          </GlassCard>
+          <GlassCard className="p-3 bg-amber-500/10 border-amber-500/20">
+            <div className="text-xl font-bold text-amber-400">{inProgressRequests.length}</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Đang thực hiện</div>
+          </GlassCard>
+          <GlassCard className="p-3 bg-purple-500/10 border-purple-500/20">
+            <div className="text-xl font-bold text-purple-400">{pendingRequests.length}</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Chờ nhận việc</div>
+          </GlassCard>
         </div>
       </header>
 
@@ -165,6 +215,14 @@ export default function DriverDashboardPage() {
           })
         )}
       </div>
+
+      {/* Driver Self Edit Phone Modal */}
+      <DriverEditModal
+        driver={editingSelf}
+        isOpen={!!editingSelf}
+        onClose={() => setEditingSelf(null)}
+        onSuccess={() => setMounted(prev => !prev)}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Vehicle, Driver, VehicleStatus, DriverStatus, FleetStats, ActivityLog } from './types';
+import type { Vehicle, Driver, VehicleStatus, DriverStatus, FleetStats, ActivityLog, DriverStats, VehicleRequest } from './types';
 import { SEED_VEHICLES, SEED_DRIVERS, SEED_USERS } from './constants';
 import { pushVehicleToSupabase, pushDriverToSupabase, deleteVehicleFromSupabase, deleteDriverFromSupabase, pushActivityLogToSupabase } from './supabaseStorage';
 
@@ -191,12 +191,60 @@ export function saveDriver(driver: Driver): void {
   const drivers = getDrivers();
   const index = drivers.findIndex(d => d.id === driver.id);
   if (index !== -1) {
-    drivers[index] = driver;
+    drivers[index] = { ...drivers[index], ...driver };
   } else {
     drivers.push(driver);
   }
   localStorage.setItem(DRIVERS_KEY, JSON.stringify(drivers));
   pushDriverToSupabase(driver);
+
+  // Sync phone & details with user account if exists in carflow_users
+  try {
+    const rawUsers = localStorage.getItem('carflow_users');
+    if (rawUsers) {
+      const users: any[] = JSON.parse(rawUsers);
+      const uIdx = users.findIndex(u => u.id === driver.id || u.username === driver.id || u.name === driver.name);
+      if (uIdx !== -1) {
+        users[uIdx].phone = driver.phone;
+        users[uIdx].name = driver.name;
+        localStorage.setItem('carflow_users', JSON.stringify(users));
+      }
+    }
+  } catch (e) {
+    console.warn('[saveDriver] Failed to sync driver phone to user account:', e);
+  }
+
+  window.dispatchEvent(new Event('carflow_data_changed'));
+}
+
+export function updateDriverPhone(driverId: string, phone: string): void {
+  const driver = getDriverById(driverId);
+  if (driver) {
+    saveDriver({ ...driver, phone });
+  }
+}
+
+export function getDriverStats(driverId: string, requests?: VehicleRequest[]): DriverStats {
+  const allRequests: VehicleRequest[] = requests || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('carflow_requests') || '[]') : []);
+  const driver = getDriverById(driverId);
+  const driverName = driver?.name?.toLowerCase() || '';
+
+  const assigned = allRequests.filter(r => {
+    if (!r.assignedDriverId) return false;
+    const assignedId = r.assignedDriverId.toLowerCase();
+    return assignedId === driverId.toLowerCase() || (driverName && assignedId === driverName);
+  });
+
+  const completedTrips = assigned.filter(r => r.status === 'completed').length;
+  const activeTrips = assigned.filter(r => ['tcth_approved', 'driver_accepted'].includes(r.status)).length;
+  const totalTrips = assigned.length;
+
+  return {
+    driverId,
+    completedTrips,
+    activeTrips,
+    totalTrips,
+  };
 }
 
 export function deleteDriver(id: string): void {
@@ -205,6 +253,7 @@ export function deleteDriver(id: string): void {
   const filtered = drivers.filter(d => d.id !== id);
   localStorage.setItem(DRIVERS_KEY, JSON.stringify(filtered));
   deleteDriverFromSupabase(id);
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }
 
 // ===== FLEET STATS =====

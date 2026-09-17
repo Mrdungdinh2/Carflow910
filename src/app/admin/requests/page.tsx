@@ -18,7 +18,7 @@ import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { getRequests, deleteRequest } from '@/lib/storage';
 import { getDepartments } from '@/lib/departmentStorage';
 import { getVehicles, getDrivers } from '@/lib/vehicleStorage';
-import type { VehicleRequest, RequestStatus } from '@/lib/types';
+import type { VehicleRequest, RequestStatus, TimeFilterPreset, TimeFilterTarget } from '@/lib/types';
 
 type ViewMode = 'stats' | 'list';
 type StatusFilter = 'all' | RequestStatus;
@@ -50,6 +50,12 @@ export default function AdminRequestsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDelete, setShowBulkDelete] = useState(false);
 
+  // Time Filter State
+  const [timePreset, setTimePreset] = useState<TimeFilterPreset>('all');
+  const [timeTarget, setTimeTarget] = useState<TimeFilterTarget>('startDateTime');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+
   const departments = useMemo(() => getDepartments(), []);
   const vehicles = useMemo(() => getVehicles(), []);
   const drivers = useMemo(() => getDrivers(), []);
@@ -68,24 +74,70 @@ export default function AdminRequestsPage() {
 
   useSupabaseSync(loadRequests);
 
+  // Time Filter Matching Function
+  const matchTimeFilter = useCallback((r: VehicleRequest) => {
+    if (timePreset === 'all' && !startDate && !endDate) return true;
+
+    const rawDateStr = timeTarget === 'startDateTime' ? (r.startDateTime || r.createdAt) : r.createdAt;
+    if (!rawDateStr) return false;
+    const date = new Date(rawDateStr);
+    if (isNaN(date.getTime())) return false;
+
+    const now = new Date();
+
+    if (timePreset === 'today') {
+      return date.toDateString() === now.toDateString();
+    }
+    if (timePreset === 'this_week') {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return date >= startOfWeek;
+    }
+    if (timePreset === 'this_month') {
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    }
+    if (timePreset === 'last_month') {
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return date.getMonth() === lastMonth.getMonth() && date.getFullYear() === lastMonth.getFullYear();
+    }
+    if (timePreset === 'custom' || startDate || endDate) {
+      if (startDate) {
+        const s = new Date(startDate);
+        s.setHours(0, 0, 0, 0);
+        if (date < s) return false;
+      }
+      if (endDate) {
+        const e = new Date(endDate);
+        e.setHours(23, 59, 59, 999);
+        if (date > e) return false;
+      }
+      return true;
+    }
+
+    return true;
+  }, [timePreset, timeTarget, startDate, endDate]);
+
   // ===== COMPUTED STATS =====
   const stats = useMemo(() => {
-    const total = requests.length;
-    const draft = requests.filter(r => r.status === 'draft').length;
-    const pending = requests.filter(r => r.status === 'pending').length;
-    const deptApproved = requests.filter(r => r.status === 'dept_approved').length;
-    const tcthApproved = requests.filter(r => r.status === 'tcth_approved').length;
-    const driverAccepted = requests.filter(r => r.status === 'driver_accepted').length;
-    const completed = requests.filter(r => r.status === 'completed').length;
-    const rejected = requests.filter(r => r.status === 'rejected').length;
+    const timeFiltered = requests.filter(matchTimeFilter);
+
+    const total = timeFiltered.length;
+    const draft = timeFiltered.filter(r => r.status === 'draft').length;
+    const pending = timeFiltered.filter(r => r.status === 'pending').length;
+    const deptApproved = timeFiltered.filter(r => r.status === 'dept_approved').length;
+    const tcthApproved = timeFiltered.filter(r => r.status === 'tcth_approved').length;
+    const driverAccepted = timeFiltered.filter(r => r.status === 'driver_accepted').length;
+    const completed = timeFiltered.filter(r => r.status === 'completed').length;
+    const rejected = timeFiltered.filter(r => r.status === 'rejected').length;
     const inProgress = pending + deptApproved + tcthApproved + driverAccepted;
 
     // Department breakdown
     const byDepartment = departments.map(dept => ({
       name: dept,
-      total: requests.filter(r => r.department === dept).length,
-      pending: requests.filter(r => r.department === dept && ['pending', 'dept_approved'].includes(r.status)).length,
-      completed: requests.filter(r => r.department === dept && r.status === 'completed').length,
+      total: timeFiltered.filter(r => r.department === dept).length,
+      pending: timeFiltered.filter(r => r.department === dept && ['pending', 'dept_approved'].includes(r.status)).length,
+      completed: timeFiltered.filter(r => r.department === dept && r.status === 'completed').length,
     })).filter(d => d.total > 0).sort((a, b) => b.total - a.total);
 
     // Time-based stats (this month vs last month)
@@ -110,11 +162,11 @@ export default function AdminRequestsPage() {
       total, draft, pending, deptApproved, tcthApproved, driverAccepted,
       completed, rejected, inProgress, byDepartment, thisMonth, lastMonth, today,
     };
-  }, [requests, departments]);
+  }, [requests, departments, matchTimeFilter]);
 
   // ===== FILTERED & SORTED REQUESTS =====
   const filteredRequests = useMemo(() => {
-    let result = [...requests];
+    let result = requests.filter(matchTimeFilter);
 
     // Status filter
     if (statusFilter !== 'all') {
@@ -160,7 +212,7 @@ export default function AdminRequestsPage() {
     }
 
     return result;
-  }, [requests, statusFilter, deptFilter, searchQuery, sortKey]);
+  }, [requests, statusFilter, deptFilter, searchQuery, sortKey, matchTimeFilter]);
 
   // ===== HANDLERS =====
   const handleDelete = (id: string) => {
@@ -266,7 +318,91 @@ export default function AdminRequestsPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 pt-4">
+      <main className="max-w-4xl mx-auto px-4 pt-4 space-y-4">
+        {/* Time Filter Control Bar */}
+        <GlassCard className="p-3.5 border-cyan-500/20 bg-cyan-950/10 space-y-3 animate-slide-up">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs font-bold text-white">Lọc & Thống kê theo Thời gian</span>
+            </div>
+
+            {/* Time Target Select */}
+            <div className="flex items-center gap-1 text-[11px] bg-white/[0.04] p-1 rounded-xl border border-white/[0.08]">
+              <span className="text-slate-400 pl-1 pr-0.5 text-[10px]">Tiêu chí:</span>
+              <button
+                onClick={() => setTimeTarget('startDateTime')}
+                className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold transition-all ${
+                  timeTarget === 'startDateTime' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Lịch công tác
+              </button>
+              <button
+                onClick={() => setTimeTarget('createdAt')}
+                className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold transition-all ${
+                  timeTarget === 'createdAt' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Ngày tạo đề xuất
+              </button>
+            </div>
+          </div>
+
+          {/* Presets Row */}
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            {[
+              { key: 'all', label: 'Tất cả' },
+              { key: 'today', label: 'Hôm nay' },
+              { key: 'this_week', label: 'Tuần này' },
+              { key: 'this_month', label: 'Tháng này' },
+              { key: 'last_month', label: 'Tháng trước' },
+              { key: 'custom', label: 'Tùy chọn khoảng ngày' },
+            ].map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => setTimePreset(opt.key as TimeFilterPreset)}
+                className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  timePreset === opt.key
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                    : 'bg-white/[0.04] text-slate-400 hover:text-white border border-white/[0.06]'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Date Pickers */}
+          {(timePreset === 'custom' || startDate || endDate) && (
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/[0.06] animate-slide-up">
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Từ ngày</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setTimePreset('custom');
+                  }}
+                  className="glass-input w-full text-xs font-mono py-1.5 px-2 text-slate-200"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Đến ngày</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setTimePreset('custom');
+                  }}
+                  className="glass-input w-full text-xs font-mono py-1.5 px-2 text-slate-200"
+                />
+              </div>
+            </div>
+          )}
+        </GlassCard>
 
         {/* ==================== STATS VIEW ==================== */}
         {viewMode === 'stats' && (
