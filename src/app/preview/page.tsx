@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, FileText, FileSpreadsheet, Pencil, Loader2, PlayCircle, CheckCircle2, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, FileSpreadsheet, Pencil, Loader2, PlayCircle, CheckCircle2, Trash2, AlertTriangle } from 'lucide-react';
 import PreviewDocument from '@/components/PreviewDocument';
 import { ApprovalTimeline } from '@/components/ApprovalTimeline';
 import { RejectionModal } from '@/components/RejectionModal';
@@ -16,7 +16,7 @@ import { exportXlsx } from '@/lib/exportXlsx';
 import { getRequestById, addApprovalEntry, assignVehicleToRequest, completeTrip } from '@/lib/storage';
 import { getVehicles, getDrivers, updateVehicleStatus, updateDriverStatus } from '@/lib/vehicleStorage';
 import { getAvailableVehiclesForTimeRange, getAvailableDriversForTimeRange } from '@/lib/conflictCheck';
-import { getRequests, deleteRequest } from '@/lib/storage';
+import { getRequests, deleteRequest, forceCompleteRequest } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/Toast';
 import { ROLE_CONFIG } from '@/lib/constants';
@@ -38,6 +38,7 @@ function PreviewContent() {
   const [odoStart, setOdoStart] = useState('');
   const [odoEnd, setOdoEnd] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showForceCompleteConfirm, setShowForceCompleteConfirm] = useState(false);
 
   // For TCTH vehicle/driver assignment
   const [showAssignment, setShowAssignment] = useState(false);
@@ -163,6 +164,23 @@ function PreviewContent() {
     showToast('Đã xóa đề xuất thành công', 'success');
     router.push('/');
   };
+
+  const handleForceComplete = () => {
+    if (!user || !request) return;
+    forceCompleteRequest(request.id, user.id, user.name, user.role as 'admin' | 'tcth');
+    showToast(`Đã hoàn thành đề xuất & giải phóng xe/tài xế`, 'success');
+    setShowForceCompleteConfirm(false);
+    refreshRequest();
+  };
+
+  // Check if request is stale (past endDateTime but not completed)
+  const isStale = (() => {
+    if (!request) return false;
+    if (request.status !== 'tcth_approved' && request.status !== 'driver_accepted') return false;
+    if (!request.endDateTime) return false;
+    const endDate = new Date(request.endDateTime);
+    return endDate < new Date();
+  })();
 
   const handleApprove = () => {
     if (!user) return;
@@ -410,6 +428,37 @@ function PreviewContent() {
         </div>
       </div>
 
+      {/* ===== STALE/OVERDUE WARNING BANNER ===== */}
+      {isStale && (
+        <div className="max-w-4xl mx-auto px-4 mb-4 animate-slide-up">
+          <GlassCard className="p-4 border-orange-500/30 bg-orange-950/20">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-orange-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-orange-300">
+                  ⚠️ Đề xuất này đã quá hạn!
+                </p>
+                <p className="text-xs text-orange-300/70 mt-1 leading-relaxed">
+                  Ngày kết thúc dự kiến: <strong>{new Date(request.endDateTime).toLocaleDateString('vi-VN')}</strong> — đã qua nhưng {request.status === 'tcth_approved' ? 'tài xế chưa nhận nhiệm vụ' : 'chưa xác nhận hoàn thành'}.
+                  Xe & tài xế đang bị khóa, không thể gán cho đề xuất mới.
+                </p>
+                {user && ['admin', 'tcth'].includes(user.role) && (
+                  <button
+                    onClick={() => setShowForceCompleteConfirm(true)}
+                    className="mt-3 px-4 py-2 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 hover:bg-emerald-500/25 transition-all flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Xác nhận hoàn thành & Giải phóng xe/tài xế
+                  </button>
+                )}
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
       {/* Assigned Vehicle & Driver Info */}
       {(request.assignedVehicleId || request.assignedDriverId) && (
         <div className="max-w-4xl mx-auto px-4 mb-4">
@@ -643,6 +692,17 @@ function PreviewContent() {
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      {/* Force Complete Stale */}
+      <ConfirmDialog
+        isOpen={showForceCompleteConfirm}
+        title="Xác nhận hoàn thành đề xuất quá hạn?"
+        message={`Đề xuất "${request.destination}" đã quá hạn. Xác nhận hoàn thành sẽ giải phóng xe & tài xế để có thể gán cho đề xuất khác.`}
+        confirmLabel="Hoàn thành & Giải phóng"
+        cancelLabel="Hủy"
+        onConfirm={handleForceComplete}
+        onCancel={() => setShowForceCompleteConfirm(false)}
       />
 
       {/* ODO Modal */}

@@ -339,6 +339,84 @@ export function createDirectTask(data: {
   return newRequest;
 }
 
+/**
+ * Rà soát đề xuất quá hạn: những đề xuất có endDateTime đã qua
+ * mà trạng thái vẫn là tcth_approved hoặc driver_accepted.
+ * Xe và tài xế bị khóa (in_use / on_duty) do chưa được xác nhận hoàn thành.
+ * @param withinDays - Số ngày quá hạn tối đa (mặc định 3 ngày gần đây)
+ */
+export function getStaleRequests(withinDays: number = 3): VehicleRequest[] {
+  const requests = getRequests();
+  const now = new Date();
+  const cutoffDate = new Date(now);
+  cutoffDate.setDate(cutoffDate.getDate() - withinDays);
+  cutoffDate.setHours(0, 0, 0, 0);
+
+  return requests.filter(r => {
+    if (r.status !== 'tcth_approved' && r.status !== 'driver_accepted') return false;
+    if (!r.endDateTime) return false;
+    const endDate = new Date(r.endDateTime);
+    // endDateTime đã qua (trước thời điểm hiện tại) và trong vòng N ngày gần đây
+    return endDate < now && endDate >= cutoffDate;
+  });
+}
+
+/**
+ * Force-complete: Đánh dấu đề xuất quá hạn là hoàn thành,
+ * giải phóng xe & tài xế (chuyển về available).
+ */
+export function forceCompleteRequest(
+  requestId: string,
+  byUserId: string,
+  byUserName: string,
+  byUserRole: 'admin' | 'tcth'
+): void {
+  if (typeof window === 'undefined') return;
+  const requests = getRequests();
+  const index = requests.findIndex(r => r.id === requestId);
+  if (index === -1) return;
+
+  const req = requests[index];
+
+  // Thêm approval entry: force complete
+  const entry: ApprovalEntry = {
+    id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+    action: 'driver_complete',
+    by: byUserId,
+    byName: byUserName,
+    byRole: byUserRole,
+    timestamp: new Date().toISOString(),
+    note: `Rà soát quá hạn — ${byUserRole === 'admin' ? 'Admin' : 'Phòng TCTH'} xác nhận hoàn thành (tự động giải phóng xe & tài xế)`,
+  };
+  if (!req.approvalHistory) req.approvalHistory = [];
+  req.approvalHistory.push(entry);
+
+  // Cập nhật trạng thái
+  req.status = 'completed';
+  req.updatedAt = new Date().toISOString();
+  requests[index] = req;
+
+  safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
+  pushRequestToSupabase(req);
+
+  // Giải phóng xe & tài xế
+  if (req.assignedVehicleId) {
+    updateVehicleStatus(req.assignedVehicleId, 'available');
+  }
+  if (req.assignedDriverId) {
+    updateDriverStatus(req.assignedDriverId, 'available');
+  }
+
+  // Ghi activity log
+  addActivityLog({
+    type: 'trip_completed',
+    description: `${byUserName} rà soát quá hạn — Hoàn thành đề xuất "${req.destination}" & giải phóng xe/tài xế`,
+    userId: byUserId,
+    userName: byUserName,
+    relatedRequestId: requestId,
+  });
+}
+
 export function clearAllDemoData(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEY);

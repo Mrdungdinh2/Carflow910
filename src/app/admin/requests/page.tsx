@@ -15,7 +15,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
-import { getRequests, deleteRequest } from '@/lib/storage';
+import { getRequests, deleteRequest, getStaleRequests, forceCompleteRequest } from '@/lib/storage';
 import { getDepartments } from '@/lib/departmentStorage';
 import { getVehicles, getDrivers } from '@/lib/vehicleStorage';
 import type { VehicleRequest, RequestStatus, TimeFilterPreset, TimeFilterTarget } from '@/lib/types';
@@ -49,6 +49,8 @@ export default function AdminRequestsPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [showStaleReview, setShowStaleReview] = useState(false);
+  const [forceCompleteTarget, setForceCompleteTarget] = useState<VehicleRequest | null>(null);
 
   // Time Filter State
   const [timePreset, setTimePreset] = useState<TimeFilterPreset>('all');
@@ -63,6 +65,9 @@ export default function AdminRequestsPage() {
   const loadRequests = useCallback(() => {
     setRequests(getRequests());
   }, []);
+
+  // Stale / overdue requests
+  const staleRequests = useMemo(() => getStaleRequests(3), [requests]);
 
   useEffect(() => {
     if (!user || !['admin', 'tcth'].includes(user.role)) {
@@ -224,6 +229,14 @@ export default function AdminRequestsPage() {
       return next;
     });
     showToast('Đã xóa đề xuất', 'success');
+  };
+
+  const handleForceComplete = (req: VehicleRequest) => {
+    if (!user) return;
+    forceCompleteRequest(req.id, user.id, user.name, user.role as 'admin' | 'tcth');
+    loadRequests();
+    setForceCompleteTarget(null);
+    showToast(`Đã hoàn thành đề xuất "${req.destination}" & giải phóng xe/tài xế`, 'success');
   };
 
   const handleBulkDelete = () => {
@@ -404,11 +417,127 @@ export default function AdminRequestsPage() {
           )}
         </GlassCard>
 
+        {/* ==================== STALE REVIEW BANNER ==================== */}
+        {staleRequests.length > 0 && (
+          <GlassCard className="p-3.5 border-orange-500/30 bg-orange-950/20 animate-slide-up">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-orange-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-orange-300">
+                    ⚠️ {staleRequests.length} đề xuất quá hạn cần rà soát
+                  </p>
+                  <p className="text-[10px] text-orange-300/60 mt-0.5">
+                    Xe & tài xế đang bị khóa do chưa xác nhận hoàn thành
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowStaleReview(!showStaleReview)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 hover:bg-orange-500/30 transition-all whitespace-nowrap"
+              >
+                {showStaleReview ? 'Ẩn' : 'Rà soát'}
+              </button>
+            </div>
+
+            {/* Stale Review Panel */}
+            {showStaleReview && (
+              <div className="mt-3 pt-3 border-t border-orange-500/20 space-y-2 animate-slide-up">
+                {staleRequests.map(req => {
+                  const vehicle = vehicles.find(v => v.id === req.assignedVehicleId);
+                  const driver = drivers.find(d => d.id === req.assignedDriverId);
+                  const endDate = new Date(req.endDateTime);
+                  const now = new Date();
+                  const daysOverdue = Math.ceil((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+
+                  return (
+                    <div key={req.id} className="p-3 rounded-xl bg-white/[0.04] border border-orange-500/15 hover:bg-white/[0.06] transition-all">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-white truncate">{req.destination || 'Chưa rõ nơi đến'}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {req.requesterName} • {req.department}
+                          </p>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/20 font-bold whitespace-nowrap">
+                          Quá hạn {daysOverdue} ngày
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5 text-[10px] mb-2">
+                        <div className="flex items-center gap-1 text-slate-400">
+                          <Calendar className="w-3 h-3 text-orange-400" />
+                          <span>Kết thúc: {endDate.toLocaleDateString('vi-VN')}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-400">
+                          <Clock className="w-3 h-3" />
+                          <StatusBadge status={req.status} compact />
+                        </div>
+                      </div>
+
+                      {/* Locked resources */}
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {vehicle && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-300 border border-red-500/20">
+                            🔒 Xe: {vehicle.plateNumber} ({vehicle.status === 'in_use' ? 'Đang bị khóa' : vehicle.status})
+                          </span>
+                        )}
+                        {driver && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-300 border border-red-500/20">
+                            🔒 TX: {driver.name} ({driver.status === 'on_duty' ? 'Đang bị khóa' : driver.status})
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/preview?id=${req.id}`}
+                          className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold text-center text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all"
+                        >
+                          Xem chi tiết
+                        </Link>
+                        <button
+                          onClick={() => setForceCompleteTarget(req)}
+                          className="flex-1 py-1.5 rounded-lg text-[11px] font-bold text-center text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 hover:bg-emerald-500/25 transition-all flex items-center justify-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          Hoàn thành & Giải phóng
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Batch force complete all */}
+                {staleRequests.length > 1 && (
+                  <button
+                    onClick={() => {
+                      if (!user) return;
+                      staleRequests.forEach(req => {
+                        forceCompleteRequest(req.id, user.id, user.name, user.role as 'admin' | 'tcth');
+                      });
+                      loadRequests();
+                      setShowStaleReview(false);
+                      showToast(`Đã hoàn thành ${staleRequests.length} đề xuất quá hạn & giải phóng tất cả xe/tài xế`, 'success');
+                    }}
+                    className="w-full py-2 rounded-xl text-xs font-bold text-orange-300 bg-orange-500/15 border border-orange-500/25 hover:bg-orange-500/25 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Hoàn thành tất cả ({staleRequests.length} đề xuất) & Giải phóng xe/tài xế
+                  </button>
+                )}
+              </div>
+            )}
+          </GlassCard>
+        )}
+
         {/* ==================== STATS VIEW ==================== */}
         {viewMode === 'stats' && (
           <div className="space-y-4 animate-slide-up">
             {/* Overview Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className={`grid ${staleRequests.length > 0 ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'} gap-3`}>
               <GlassCard className="p-3 text-center">
                 <div className="text-2xl font-bold text-white">{stats.total}</div>
                 <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Tổng đề xuất</div>
@@ -425,6 +554,12 @@ export default function AdminRequestsPage() {
                 <div className="text-2xl font-bold text-red-400">{stats.rejected}</div>
                 <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Từ chối</div>
               </GlassCard>
+              {staleRequests.length > 0 && (
+                <GlassCard className="p-3 text-center border-orange-500/30 cursor-pointer hover:bg-orange-500/5 transition-all" onClick={() => setShowStaleReview(true)}>
+                  <div className="text-2xl font-bold text-orange-400">{staleRequests.length}</div>
+                  <div className="text-[10px] text-orange-300/70 mt-0.5 font-medium">⚠️ Quá hạn</div>
+                </GlassCard>
+              )}
             </div>
 
             {/* Status Pipeline */}
@@ -780,6 +915,21 @@ export default function AdminRequestsPage() {
         variant="danger"
         onConfirm={handleBulkDelete}
         onCancel={() => setShowBulkDelete(false)}
+      />
+
+      {/* Force Complete Stale Confirm */}
+      <ConfirmDialog
+        isOpen={!!forceCompleteTarget}
+        title="Xác nhận hoàn thành đề xuất quá hạn?"
+        message={`Đề xuất "${forceCompleteTarget?.destination || ''}" đã quá hạn. Xác nhận hoàn thành sẽ giải phóng xe & tài xế để có thể gán cho đề xuất khác.`}
+        confirmLabel="Hoàn thành & Giải phóng"
+        cancelLabel="Hủy"
+        onConfirm={() => {
+          if (forceCompleteTarget) {
+            handleForceComplete(forceCompleteTarget);
+          }
+        }}
+        onCancel={() => setForceCompleteTarget(null)}
       />
     </div>
   );
