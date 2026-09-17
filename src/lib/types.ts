@@ -7,6 +7,7 @@ export interface User {
   name: string;
   role: UserRole;
   department: string;
+  phone?: string;
 }
 
 // ===== VEHICLE =====

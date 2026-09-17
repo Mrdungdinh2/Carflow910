@@ -9,9 +9,10 @@ import { useAuth } from '@/lib/AuthContext';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useToast } from '@/components/Toast';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { Pencil, Trash2, Plus, Search, Shield, User as UserIcon, Lock, ArrowLeft } from 'lucide-react';
+import { Pencil, Trash2, Plus, Search, Shield, User as UserIcon, Lock, ArrowLeft, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { ROLE_CONFIG } from '@/lib/constants';
+import { saveDriver } from '@/lib/vehicleStorage';
 
 export default function UsersAdmin() {
   const { user: currentUser } = useAuth();
@@ -27,6 +28,7 @@ export default function UsersAdmin() {
     username: '',
     newPassword: '',
     name: '',
+    phone: '',
     role: 'staff',
     department: '',
   });
@@ -54,6 +56,7 @@ export default function UsersAdmin() {
       u =>
         u.name.toLowerCase().includes(q) ||
         u.username.toLowerCase().includes(q) ||
+        u.phone?.toLowerCase().includes(q) ||
         u.department?.toLowerCase().includes(q) ||
         ROLE_CONFIG[u.role]?.label.toLowerCase().includes(q)
     );
@@ -106,15 +109,15 @@ export default function UsersAdmin() {
   const executeSave = async () => {
     setSaving(true);
     try {
+      const targetPhone = formData.phone?.trim() || '';
+
       if (isEdit) {
-        // BUG #2 Fix: Edit mode — use existing ID, never generate new
         if (!formData.id) {
           showToast('Lỗi: Không tìm thấy ID người dùng để cập nhật', 'error');
           setSaving(false);
           return;
         }
 
-        // BUG #1 Fix: Atomic update via server API
         const res = await fetch('/api/users/update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -137,7 +140,6 @@ export default function UsersAdmin() {
           return;
         }
       } else {
-        // BUG #1 Fix: Create via atomic API (hash password correctly)
         const res = await fetch('/api/users/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -161,8 +163,34 @@ export default function UsersAdmin() {
         }
       }
 
+      // Save phone to local storage user cache
+      try {
+        const rawUsers = localStorage.getItem('carflow_users');
+        if (rawUsers) {
+          const uList: User[] = JSON.parse(rawUsers);
+          const uIdx = uList.findIndex(u => u.username === formData.username?.trim() || u.id === formData.id);
+          if (uIdx !== -1) {
+            uList[uIdx].phone = targetPhone;
+            localStorage.setItem('carflow_users', JSON.stringify(uList));
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to cache phone to carflow_users', e);
+      }
+
+      // If user role is driver, also update or create driver entry
+      if (formData.role === 'driver') {
+        const driverId = formData.id || formData.username?.trim() || 'usr_' + Date.now();
+        saveDriver({
+          id: driverId,
+          name: formData.name!.trim(),
+          phone: targetPhone || '0901234567',
+          licenseClass: 'B2',
+          status: 'available',
+        });
+      }
+
       showToast(isEdit ? 'Đã cập nhật người dùng!' : 'User đã được tạo thành công!', 'success');
-      // Trigger Supabase sync to refresh local data
       window.dispatchEvent(new Event('carflow_data_changed'));
       refreshData();
       setShowModal(false);
@@ -179,6 +207,7 @@ export default function UsersAdmin() {
       username: u.username,
       newPassword: '', // blank unless changing password
       name: u.name,
+      phone: u.phone || '',
       role: u.role,
       department: u.department || '',
     });
@@ -205,6 +234,7 @@ export default function UsersAdmin() {
       username: '',
       newPassword: '123456',
       name: '',
+      phone: '',
       role: 'staff',
       department: departments[0] || 'Phòng Tổng hợp',
     });
@@ -238,7 +268,7 @@ export default function UsersAdmin() {
         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
-          placeholder="Tìm theo họ tên, username, phòng ban..."
+          placeholder="Tìm theo họ tên, username, số điện thoại, phòng ban..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="glass-input w-full pl-10 pr-4 py-2.5 text-xs"
@@ -270,8 +300,14 @@ export default function UsersAdmin() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      <span className="font-mono text-cyan-400">@{u.username}</span> • {u.department || 'Không có phòng ban'}
+                    <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-cyan-400">@{u.username}</span>
+                      {u.phone && (
+                        <span className="text-emerald-400 font-mono text-[11px] flex items-center gap-0.5">
+                          <Phone className="w-3 h-3" /> {u.phone}
+                        </span>
+                      )}
+                      <span>• {u.department || 'Không có phòng ban'}</span>
                     </p>
                   </div>
                 </div>
@@ -345,6 +381,20 @@ export default function UsersAdmin() {
                   className="glass-input w-full text-xs"
                   placeholder="Ví dụ: Nguyễn Văn Nam"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                  Số điện thoại liên hệ
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone || ''}
+                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  className="glass-input w-full text-xs font-mono"
+                  placeholder="Ví dụ: 0901234567"
                 />
               </div>
 
