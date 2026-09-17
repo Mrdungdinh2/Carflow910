@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Car, Users, ArrowLeft, Send, PlusCircle } from 'lucide-react';
+import { Car, Users, ArrowLeft, Send, PlusCircle, CalendarClock } from 'lucide-react';
 import { getVehicles, getDrivers, getFleetStats } from '@/lib/vehicleStorage';
+import { getUpcomingReservations } from '@/lib/storage';
 import { Vehicle, Driver, FleetStats } from '@/lib/types';
 import { VehicleCard } from '@/components/VehicleCard';
 import { DriverCard } from '@/components/DriverCard';
@@ -33,6 +34,21 @@ export default function FleetPage() {
     setVehicles(getVehicles());
     setDrivers(getDrivers());
     setStats(getFleetStats());
+  };
+
+  // Đề xuất tương lai đã gán xe/tài xế
+  const upcomingReservations = useMemo(() => {
+    return getUpcomingReservations();
+  }, [vehicles, drivers]);
+
+  // Helper: lấy reservation của xe
+  const getVehicleReservation = (vehicleId: string) => {
+    return upcomingReservations.find(r => r.assignedVehicleId === vehicleId);
+  };
+
+  // Helper: lấy reservation của tài xế
+  const getDriverReservation = (driverId: string) => {
+    return upcomingReservations.find(r => r.assignedDriverId === driverId);
   };
 
   const handleVehicleStatusChange = (vehicleId: string, newStatus: any) => {
@@ -146,9 +162,20 @@ export default function FleetPage() {
           )}
           
           <div className="grid gap-3">
-            {vehicles.map((v, i) => (
+            {vehicles.map((v, i) => {
+              const reservation = getVehicleReservation(v.id);
+              return (
               <div key={v.id} style={{ animationDelay: `${i * 100}ms` }} className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
                 <VehicleCard vehicle={v} />
+                {/* Badge đặt trước */}
+                {reservation && v.status === 'available' && (
+                  <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                    <CalendarClock className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                    <span className="text-[10px] text-purple-300 font-medium">
+                      📅 Đặt trước cho <strong>{new Date(reservation.startDateTime).toLocaleDateString('vi-VN')}</strong> • {reservation.destination}
+                    </span>
+                  </div>
+                )}
                 {canManage && (
                   <div className="mt-2 flex items-center justify-end gap-2">
                     <span className="text-[10px] text-slate-400">Đổi trạng thái:</span>
@@ -164,7 +191,8 @@ export default function FleetPage() {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -188,13 +216,24 @@ export default function FleetPage() {
             </div>
 
           <div className="grid gap-3">
-            {drivers.map((d, i) => (
+            {drivers.map((d, i) => {
+              const reservation = getDriverReservation(d.id);
+              return (
               <div key={d.id} style={{ animationDelay: `${i * 100}ms` }} className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
                 <DriverCard
                   driver={d}
                   onEditPhone={canManage ? (driverToEdit) => setEditingDriver(driverToEdit) : undefined}
                   onViewHistory={(driverToView) => setHistoryDriver(driverToView)}
                 />
+                {/* Badge đặt trước */}
+                {reservation && d.status === 'available' && (
+                  <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                    <CalendarClock className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                    <span className="text-[10px] text-purple-300 font-medium">
+                      📅 Đặt trước cho <strong>{new Date(reservation.startDateTime).toLocaleDateString('vi-VN')}</strong> • {reservation.destination}
+                    </span>
+                  </div>
+                )}
                 {canManage && (
                   <div className="mt-2 flex items-center justify-end gap-2">
                     <span className="text-[10px] text-slate-400">Đổi trạng thái:</span>
@@ -211,7 +250,8 @@ export default function FleetPage() {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
