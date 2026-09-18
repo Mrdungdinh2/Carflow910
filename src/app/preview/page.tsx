@@ -170,10 +170,11 @@ function PreviewContent() {
 
   const canDelete = () => {
     if (!user) return false;
+    // Chỉ chủ đề xuất (owner) hoặc Admin mới được xóa
+    // Trưởng phòng & TCTH chỉ có quyền Từ chối hoặc Duyệt
     if (['draft', 'pending', 'rejected'].includes(request.status)) {
       if (isOwner) return true;
       if (user.role === 'admin') return true;
-      if (user.role === 'dept_head' && user.department === request.department) return true;
     }
     return false;
   };
