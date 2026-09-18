@@ -622,7 +622,7 @@ function PreviewContent() {
                 disabled={!selectedVehicle || !selectedDriver}
                 className="btn-primary flex-1 text-sm py-2.5 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Duyệt & Gán xe
+                Duyệt & Gán Tài xế
               </button>
             </div>
           </div>
@@ -673,7 +673,7 @@ function PreviewContent() {
                 Từ chối
               </button>
               <button onClick={handleApprove} className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm py-3 bg-gradient-to-r from-emerald-500 to-cyan-600 font-bold">
-                {user?.role === 'tcth' ? 'Duyệt & Gán xe' : user?.role === 'dept_head' ? 'Duyệt & Gửi Phòng TCTH' : 'Phê duyệt'}
+                {user?.role === 'tcth' ? 'Duyệt & Gán Tài xế' : user?.role === 'dept_head' ? 'Duyệt & Gửi Phòng TCTH' : 'Phê duyệt'}
               </button>
             </div>
           )}
