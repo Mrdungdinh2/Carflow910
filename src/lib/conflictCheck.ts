@@ -97,6 +97,7 @@ export function getAvailableVehiclesForTimeRange(
     if (v.status === 'maintenance' || v.status === 'retired') return false;
     // Xe đang in_use → chỉ cho phép gán nếu chuyến là TƯƠNG LAI
     if (v.status === 'in_use' && !isFutureTrip) return false;
+    // Xe 'reserved' (đang đợi chuyến tương lai) → cho phép gán thêm nếu không trùng lịch
     // Kiểm tra trùng lịch time-range
     const { available } = isVehicleAvailable(v.id, startTime, endTime, allRequests, excludeRequestId);
     return available;
@@ -128,6 +129,7 @@ export function getAvailableDriversForTimeRange(
     if (d.status === 'day_off' || d.status === 'sick_leave') return false;
     // TX đang on_duty → chỉ cho phép nếu chuyến là TƯƠNG LAI
     if (d.status === 'on_duty' && !isFutureTrip) return false;
+    // TX 'reserved' (đang đợi chuyến tương lai) → cho phép gán thêm nếu không trùng lịch
     // Kiểm tra trùng lịch time-range
     const { available } = isDriverAvailable(d.id, startTime, endTime, allRequests, excludeRequestId);
     return available;

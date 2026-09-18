@@ -52,7 +52,7 @@ export function syncTodayTripStatuses(): number {
     const tripDay = new Date(req.startDateTime);
     tripDay.setHours(0, 0, 0, 0);
 
-    // Ngày đi là HÔM NAY → khóa xe & TX
+    // Ngày đi là HÔM NAY → chuyển từ reserved sang in_use/on_duty
     if (tripDay.getTime() === today.getTime()) {
       updateVehicleStatus(req.assignedVehicleId, 'in_use');
       updateDriverStatus(req.assignedDriverId, 'on_duty');
@@ -322,8 +322,12 @@ export function assignVehicleToRequest(requestId: string, vehicleId: string, dri
     // Ngày đi là hôm nay hoặc đã qua → khóa ngay
     updateVehicleStatus(vehicleId, 'in_use');
     updateDriverStatus(driverId, 'on_duty');
+  } else {
+    // Đề xuất tương lai → set trạng thái 'reserved' (Đang đợi)
+    // Xe/TX vẫn có thể nhận nhiệm vụ hôm nay
+    updateVehicleStatus(vehicleId, 'reserved');
+    updateDriverStatus(driverId, 'reserved');
   }
-  // else: Đề xuất tương lai → xe & tài xế giữ available, conflict-check sẽ ngăn trùng lịch
 
   addActivityLog({
     type: 'vehicle_assigned',

@@ -11,7 +11,7 @@ export interface User {
 }
 
 // ===== VEHICLE =====
-export type VehicleStatus = 'available' | 'in_use' | 'maintenance' | 'retired';
+export type VehicleStatus = 'available' | 'in_use' | 'reserved' | 'maintenance' | 'retired';
 
 export interface Vehicle {
   id: string;
@@ -24,7 +24,7 @@ export interface Vehicle {
 }
 
 // ===== DRIVER =====
-export type DriverStatus = 'available' | 'on_duty' | 'day_off' | 'sick_leave';
+export type DriverStatus = 'available' | 'on_duty' | 'reserved' | 'day_off' | 'sick_leave';
 
 export interface Driver {
   id: string;

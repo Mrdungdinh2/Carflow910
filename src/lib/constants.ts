@@ -73,6 +73,7 @@ export const REJECTION_REASONS: Record<RejectionReason, string> = {
 export const VEHICLE_STATUS_CONFIG: Record<VehicleStatus, { label: string; color: string }> = {
   available:   { label: 'Sẵn sàng',   color: 'text-emerald-400' },
   in_use:      { label: 'Đang dùng',  color: 'text-blue-400' },
+  reserved:    { label: 'Đang đợi',   color: 'text-purple-400' },
   maintenance: { label: 'Bảo trì',    color: 'text-amber-400' },
   retired:     { label: 'Thanh lý',    color: 'text-slate-500' },
 };
@@ -81,6 +82,7 @@ export const VEHICLE_STATUS_CONFIG: Record<VehicleStatus, { label: string; color
 export const DRIVER_STATUS_CONFIG: Record<DriverStatus, { label: string; color: string }> = {
   available:  { label: 'Sẵn sàng',   color: 'text-emerald-400' },
   on_duty:    { label: 'Đang chạy',  color: 'text-blue-400' },
+  reserved:   { label: 'Đang đợi',   color: 'text-purple-400' },
   day_off:    { label: 'Nghỉ phép',  color: 'text-amber-400' },
   sick_leave: { label: 'Nghỉ ốm',   color: 'text-red-400' },
 };
