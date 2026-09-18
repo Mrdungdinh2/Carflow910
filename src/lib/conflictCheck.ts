@@ -74,8 +74,10 @@ export function isDriverAvailable(
 
 /**
  * Get all available vehicles for a time range.
- * CHỈ xe có status === 'available' mới được gán.
- * Xe đang 'in_use', 'maintenance', 'retired' đều bị loại.
+ * - Xe maintenance/retired: LUÔN bị loại.
+ * - Xe available: OK nếu không trùng lịch.
+ * - Xe in_use: Cho phép gán cho chuyến TƯƠNG LAI nếu không trùng lịch
+ *   (khi chuyến hiện tại hoàn thành, xe sẽ tự về available).
  */
 export function getAvailableVehiclesForTimeRange(
   vehicles: Vehicle[],
@@ -84,9 +86,18 @@ export function getAvailableVehiclesForTimeRange(
   endTime: string,
   excludeRequestId?: string
 ): Vehicle[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tripDay = new Date(startTime);
+  tripDay.setHours(0, 0, 0, 0);
+  const isFutureTrip = tripDay > today;
+
   return vehicles.filter(v => {
-    // CHỈ cho phép xe ở trạng thái "sẵn sàng"
-    if (v.status !== 'available') return false;
+    // Xe bảo trì / thanh lý → luôn loại
+    if (v.status === 'maintenance' || v.status === 'retired') return false;
+    // Xe đang in_use → chỉ cho phép gán nếu chuyến là TƯƠNG LAI
+    if (v.status === 'in_use' && !isFutureTrip) return false;
+    // Kiểm tra trùng lịch time-range
     const { available } = isVehicleAvailable(v.id, startTime, endTime, allRequests, excludeRequestId);
     return available;
   });
@@ -94,8 +105,10 @@ export function getAvailableVehiclesForTimeRange(
 
 /**
  * Get all available drivers for a time range.
- * CHỈ tài xế có status === 'available' mới được gán.
- * Tài xế đang 'on_duty', 'day_off', 'sick_leave' đều bị loại.
+ * - TX day_off/sick_leave: LUÔN bị loại.
+ * - TX available: OK nếu không trùng lịch.
+ * - TX on_duty: Cho phép gán cho chuyến TƯƠNG LAI nếu không trùng lịch
+ *   (khi chuyến hiện tại hoàn thành, TX sẽ tự về available).
  */
 export function getAvailableDriversForTimeRange(
   drivers: Driver[],
@@ -104,9 +117,18 @@ export function getAvailableDriversForTimeRange(
   endTime: string,
   excludeRequestId?: string
 ): Driver[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tripDay = new Date(startTime);
+  tripDay.setHours(0, 0, 0, 0);
+  const isFutureTrip = tripDay > today;
+
   return drivers.filter(d => {
-    // CHỈ cho phép tài xế ở trạng thái "sẵn sàng"
-    if (d.status !== 'available') return false;
+    // TX nghỉ phép / nghỉ ốm → luôn loại
+    if (d.status === 'day_off' || d.status === 'sick_leave') return false;
+    // TX đang on_duty → chỉ cho phép nếu chuyến là TƯƠNG LAI
+    if (d.status === 'on_duty' && !isFutureTrip) return false;
+    // Kiểm tra trùng lịch time-range
     const { available } = isDriverAvailable(d.id, startTime, endTime, allRequests, excludeRequestId);
     return available;
   });
