@@ -61,8 +61,8 @@ export default function LoginScreen() {
 
             {/* Tagline PREMIUM */}
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#f4c3af] bg-[#f4c3af]/10 border border-[#f4c3af]/30 px-3 py-0.5 rounded-full shadow-inner">
-                P R E M I U M
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#f4c3af] bg-[#f4c3af]/10 border border-[#f4c3af]/30 px-3 py-0.5 rounded-full shadow-inner">
+                CHI NHÁNH NAM SÀI GÒN
               </span>
             </div>
           </div>
