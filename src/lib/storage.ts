@@ -28,6 +28,40 @@ export function getUpcomingReservations(): VehicleRequest[] {
   });
 }
 
+/**
+ * [Fix C] Auto-lock: Tự động chuyển xe → in_use, TX → on_duty
+ * cho các đề xuất đã gán mà ngày đi là HÔM NAY.
+ * Gọi hàm này khi app load hoặc refresh trang chính.
+ * @returns Số đề xuất đã được auto-lock
+ */
+export function syncTodayTripStatuses(): number {
+  if (typeof window === 'undefined') return 0;
+  const requests = getRequests();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  let count = 0;
+
+  for (const req of requests) {
+    // Chỉ xét đề xuất đã gán xe/TX nhưng TX chưa nhận
+    if (req.status !== 'tcth_approved') continue;
+    if (!req.assignedVehicleId || !req.assignedDriverId) continue;
+    if (!req.startDateTime) continue;
+
+    const tripDay = new Date(req.startDateTime);
+    tripDay.setHours(0, 0, 0, 0);
+
+    // Ngày đi là HÔM NAY → khóa xe & TX
+    if (tripDay.getTime() === today.getTime()) {
+      updateVehicleStatus(req.assignedVehicleId, 'in_use');
+      updateDriverStatus(req.assignedDriverId, 'on_duty');
+      count++;
+    }
+  }
+  return count;
+}
+
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
 }
@@ -134,6 +168,27 @@ export function updateRequestStatus(id: string, status: RequestStatus): void {
 
 export function deleteRequest(id: string): void {
   if (typeof window === 'undefined') return;
+  // [Fix A] Giải phóng xe/TX nếu đề xuất đã gán trước khi xóa
+  const target = getRequestById(id);
+  if (target && ['tcth_approved', 'driver_accepted'].includes(target.status)) {
+    if (target.assignedVehicleId) {
+      // Chỉ giải phóng nếu không có đề xuất KHÁC đang dùng xe này
+      const otherUsingVehicle = getRequests().some(r =>
+        r.id !== id &&
+        ['driver_accepted'].includes(r.status) &&
+        r.assignedVehicleId === target.assignedVehicleId
+      );
+      if (!otherUsingVehicle) updateVehicleStatus(target.assignedVehicleId, 'available');
+    }
+    if (target.assignedDriverId) {
+      const otherUsingDriver = getRequests().some(r =>
+        r.id !== id &&
+        ['driver_accepted'].includes(r.status) &&
+        r.assignedDriverId === target.assignedDriverId
+      );
+      if (!otherUsingDriver) updateDriverStatus(target.assignedDriverId, 'available');
+    }
+  }
   const requests = getRequests().filter(r => r.id !== id);
   safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   deleteRequestFromSupabase(id);
@@ -170,6 +225,23 @@ export function addApprovalEntry(
     requests[index].status = 'pending';
   } else if (fullEntry.action === 'reject') {
     requests[index].status = 'rejected';
+    // [Fix A] Giải phóng xe/TX khi reject đề xuất đã gán
+    if (requests[index].assignedVehicleId) {
+      const otherUsingVehicle = requests.some(r =>
+        r.id !== requests[index].id &&
+        ['driver_accepted'].includes(r.status) &&
+        r.assignedVehicleId === requests[index].assignedVehicleId
+      );
+      if (!otherUsingVehicle) updateVehicleStatus(requests[index].assignedVehicleId!, 'available');
+    }
+    if (requests[index].assignedDriverId) {
+      const otherUsingDriver = requests.some(r =>
+        r.id !== requests[index].id &&
+        ['driver_accepted'].includes(r.status) &&
+        r.assignedDriverId === requests[index].assignedDriverId
+      );
+      if (!otherUsingDriver) updateDriverStatus(requests[index].assignedDriverId!, 'available');
+    }
   } else if (fullEntry.action === 'approve') {
     if (fullEntry.byRole === 'dept_head') {
       requests[index].status = 'dept_approved';
@@ -271,17 +343,35 @@ export function completeTrip(requestId: string, endOdo: number): void {
 
   const req = requests[index];
   req.tripOdoEnd = endOdo;
+  // [Fix H] Đảm bảo completeTrip cũng set status = completed
+  req.status = 'completed';
   req.updatedAt = new Date().toISOString();
   safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(req);
 
   // Release vehicle & driver
   if (req.assignedVehicleId) {
-    updateVehicleStatus(req.assignedVehicleId, 'available');
+    // [Fix E] Chỉ giải phóng xe nếu không còn nhiệm vụ khác đang dùng
+    const otherActiveVehicle = requests.some(r =>
+      r.id !== requestId &&
+      r.status === 'driver_accepted' &&
+      r.assignedVehicleId === req.assignedVehicleId
+    );
+    if (!otherActiveVehicle) {
+      updateVehicleStatus(req.assignedVehicleId, 'available');
+    }
     updateVehicleOdo(req.assignedVehicleId, endOdo);
   }
   if (req.assignedDriverId) {
-    updateDriverStatus(req.assignedDriverId, 'available');
+    // [Fix E] Chỉ giải phóng TX nếu không còn nhiệm vụ khác đang chạy
+    const otherActiveDriver = requests.some(r =>
+      r.id !== requestId &&
+      r.status === 'driver_accepted' &&
+      r.assignedDriverId === req.assignedDriverId
+    );
+    if (!otherActiveDriver) {
+      updateDriverStatus(req.assignedDriverId, 'available');
+    }
   }
 
   addActivityLog({
@@ -390,7 +480,8 @@ export function createDirectTask(data: {
  * Xe và tài xế bị khóa (in_use / on_duty) do chưa được xác nhận hoàn thành.
  * @param withinDays - Số ngày quá hạn tối đa (mặc định 3 ngày gần đây)
  */
-export function getStaleRequests(withinDays: number = 3): VehicleRequest[] {
+// [Fix G] Mở rộng phạm vi rà soát quá hạn từ 3 → 30 ngày
+export function getStaleRequests(withinDays: number = 30): VehicleRequest[] {
   const requests = getRequests();
   const now = new Date();
   const cutoffDate = new Date(now);

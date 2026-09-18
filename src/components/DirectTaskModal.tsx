@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, Truck, Car, Calendar, MapPin, FileText, User } from 'lucide-react';
 import { getVehicles, getDrivers } from '@/lib/vehicleStorage';
-import { createDirectTask } from '@/lib/storage';
+import { createDirectTask, getRequests } from '@/lib/storage';
+import { getAvailableVehiclesForTimeRange, getAvailableDriversForTimeRange } from '@/lib/conflictCheck';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/Toast';
 import { Vehicle, Driver } from '@/lib/types';
@@ -29,14 +30,30 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
   const [startDateTime, setStartDateTime] = useState('');
   const [endDateTime, setEndDateTime] = useState('');
 
-  useEffect(() => {
-    if (isOpen) {
-      const allVehicles = getVehicles();
-      const allDrivers = getDrivers();
-      // CHỈ hiển thị xe/tài xế ở trạng thái "sẵn sàng"
+  // [Fix B] Cập nhật danh sách xe/TX dựa trên conflict-check time-range
+  const refreshAvailableResources = (start: string, end: string) => {
+    const allVehicles = getVehicles();
+    const allDrivers = getDrivers();
+    const allReqs = getRequests();
+
+    if (start && end) {
+      // Dùng conflict-check đầy đủ thay vì chỉ lọc status
+      const availV = getAvailableVehiclesForTimeRange(allVehicles, allReqs, start, end);
+      const availD = getAvailableDriversForTimeRange(allDrivers, allReqs, start, end);
+      setVehicles(availV);
+      setDrivers(availD);
+      // Auto-select first available
+      setSelectedVehicleId(availV.length > 0 ? availV[0].id : '');
+      setSelectedDriverId(availD.length > 0 ? availD[0].id : '');
+    } else {
+      // Fallback: lọc đơn giản theo status
       setVehicles(allVehicles.filter(v => v.status === 'available'));
       setDrivers(allDrivers.filter(d => d.status === 'available'));
+    }
+  };
 
+  useEffect(() => {
+    if (isOpen) {
       // Tính thời gian mặc định theo local time (tránh lệch timezone)
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, '0');
@@ -47,13 +64,8 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
       setStartDateTime(startIso);
       setEndDateTime(endIso);
 
-      // Default select first available vehicle & driver
-      const availV = allVehicles.find(v => v.status === 'available');
-      const availD = allDrivers.find(d => d.status === 'available');
-      if (availV) setSelectedVehicleId(availV.id);
-      else setSelectedVehicleId('');
-      if (availD) setSelectedDriverId(availD.id);
-      else setSelectedDriverId('');
+      // [Fix B] Dùng conflict-check time-range để lọc xe/TX
+      refreshAvailableResources(startIso, endIso);
     }
   }, [isOpen]);
 
@@ -204,7 +216,11 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
                 type="datetime-local"
                 required
                 value={startDateTime}
-                onChange={(e) => setStartDateTime(e.target.value)}
+                onChange={(e) => {
+                setStartDateTime(e.target.value);
+                // [Fix B] Cập nhật lại danh sách xe/TX khi đổi thời gian
+                if (e.target.value && endDateTime) refreshAvailableResources(e.target.value, endDateTime);
+              }}
                 min={(() => {
                   const now = new Date();
                   const pad = (n: number) => String(n).padStart(2, '0');
@@ -221,7 +237,11 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
                 type="datetime-local"
                 required
                 value={endDateTime}
-                onChange={(e) => setEndDateTime(e.target.value)}
+                onChange={(e) => {
+                setEndDateTime(e.target.value);
+                // [Fix B] Cập nhật lại danh sách xe/TX khi đổi thời gian
+                if (startDateTime && e.target.value) refreshAvailableResources(startDateTime, e.target.value);
+              }}
                 min={startDateTime || (() => {
                   const now = new Date();
                   const pad = (n: number) => String(n).padStart(2, '0');

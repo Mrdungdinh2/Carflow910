@@ -141,7 +141,26 @@ function PreviewContent() {
 
   const canDriverAccept = () => {
     if (!user) return false;
-    return user.role === 'driver' && request.status === 'tcth_approved' && request.assignedDriverId === user.id;
+    if (user.role !== 'driver' || request.status !== 'tcth_approved' || request.assignedDriverId !== user.id) return false;
+    // [Fix D] Ng\u0103n TX nh\u1eadn nhi\u1ec7m v\u1ee5 th\u1ee9 2 khi \u0111ang ch\u1ea1y nhi\u1ec7m v\u1ee5 kh\u00e1c
+    const allReqs = getRequests();
+    const hasActiveTrip = allReqs.some(r =>
+      r.id !== request.id &&
+      r.status === 'driver_accepted' &&
+      r.assignedDriverId === user.id
+    );
+    return !hasActiveTrip;
+  };
+
+  // [Fix D] Ki\u1ec3m tra TX c\u00f3 \u0111ang b\u1eadn kh\u00f4ng (\u0111\u1ec3 hi\u1ec3n c\u1ea3nh b\u00e1o)
+  const isDriverBusy = () => {
+    if (!user || user.role !== 'driver') return false;
+    const allReqs = getRequests();
+    return allReqs.some(r =>
+      r.id !== request.id &&
+      r.status === 'driver_accepted' &&
+      r.assignedDriverId === user.id
+    );
   };
 
   const canDriverComplete = () => {
@@ -662,6 +681,14 @@ function PreviewContent() {
               <PlayCircle className="w-5 h-5" />
               Nhận nhiệm vụ
             </button>
+          )}
+
+          {/* [Fix D] Cảnh báo TX đang bận */}
+          {user?.role === 'driver' && request.status === 'tcth_approved' && request.assignedDriverId === user.id && isDriverBusy() && (
+            <div className="w-full py-3 px-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
+              <p className="text-xs font-semibold text-amber-300">⚠️ Bạn đang thực hiện nhiệm vụ khác</p>
+              <p className="text-[10px] text-amber-300/60 mt-0.5">Hoàn thành nhiệm vụ hiện tại trước khi nhận nhiệm vụ mới</p>
+            </div>
           )}
 
           {canDriverComplete() && (

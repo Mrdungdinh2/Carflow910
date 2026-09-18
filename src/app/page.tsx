@@ -11,7 +11,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
-import { getRequests, getPendingForRole, deleteRequest } from '@/lib/storage';
+import { getRequests, getPendingForRole, deleteRequest, syncTodayTripStatuses } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { ROLE_CONFIG } from '@/lib/constants';
 import type { VehicleRequest, DashboardStats as DashboardStatsType } from '@/lib/types';
@@ -38,6 +38,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setMounted(true);
+    // [Fix C] Tự động khóa xe/TX cho đề xuất hôm nay khi mở app
+    syncTodayTripStatuses();
     setAllRequests(getRequests());
   }, []);
 

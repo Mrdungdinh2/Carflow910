@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Car, Users, ArrowLeft, Send, PlusCircle, CalendarClock } from 'lucide-react';
 import { getVehicles, getDrivers, getFleetStats } from '@/lib/vehicleStorage';
-import { getUpcomingReservations } from '@/lib/storage';
+import { getUpcomingReservations, syncTodayTripStatuses, getRequests } from '@/lib/storage';
 import { Vehicle, Driver, FleetStats } from '@/lib/types';
 import { VehicleCard } from '@/components/VehicleCard';
 import { DriverCard } from '@/components/DriverCard';
@@ -53,6 +53,20 @@ export default function FleetPage() {
 
   const handleVehicleStatusChange = (vehicleId: string, newStatus: any) => {
     if (!canManage) return;
+    // [Fix F] Cảnh báo khi đổi xe đang in_use về available
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if (vehicle && vehicle.status === 'in_use' && newStatus === 'available') {
+      const activeReq = getRequests().find(r =>
+        ['driver_accepted', 'tcth_approved'].includes(r.status) &&
+        r.assignedVehicleId === vehicleId
+      );
+      if (activeReq) {
+        const ok = window.confirm(
+          `⚠️ Xe ${vehicle.plateNumber} đang được gán cho đề xuất "${activeReq.destination}".\n\nBạn chắc chắn muốn đổi về Sẵn sàng?`
+        );
+        if (!ok) return;
+      }
+    }
     import('@/lib/vehicleStorage').then(({ updateVehicleStatus }) => {
       updateVehicleStatus(vehicleId, newStatus);
       refreshData();
@@ -61,6 +75,20 @@ export default function FleetPage() {
 
   const handleDriverStatusChange = (driverId: string, newStatus: any) => {
     if (!canManage) return;
+    // [Fix F] Cảnh báo khi đổi TX đang on_duty về available
+    const driver = drivers.find(d => d.id === driverId);
+    if (driver && driver.status === 'on_duty' && newStatus === 'available') {
+      const activeReq = getRequests().find(r =>
+        ['driver_accepted', 'tcth_approved'].includes(r.status) &&
+        r.assignedDriverId === driverId
+      );
+      if (activeReq) {
+        const ok = window.confirm(
+          `⚠️ Tài xế ${driver.name} đang thực hiện nhiệm vụ "${activeReq.destination}".\n\nBạn chắc chắn muốn đổi về Sẵn sàng?`
+        );
+        if (!ok) return;
+      }
+    }
     import('@/lib/vehicleStorage').then(({ updateDriverStatus }) => {
       updateDriverStatus(driverId, newStatus);
       refreshData();
@@ -72,6 +100,8 @@ export default function FleetPage() {
       router.push('/login');
       return;
     }
+    // [Fix C] Tự động khóa xe/TX cho đề xuất hôm nay khi load trang
+    syncTodayTripStatuses();
     refreshData();
   }, [user, router]);
 
