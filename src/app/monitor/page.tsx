@@ -61,21 +61,29 @@ export default function MonitorPage() {
             <Car className="w-4 h-4" /> Tổng quan đoàn xe
           </h2>
           {stats && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <GlassCard className="p-3 text-center">
                 <div className="text-2xl font-bold text-emerald-400">{stats.availableVehicles}</div>
                 <div className="text-xs text-slate-400 mt-1">Xe trống</div>
               </GlassCard>
               <GlassCard className="p-3 text-center">
                 <div className="text-2xl font-bold text-blue-400">{stats.inUseVehicles}</div>
-                <div className="text-xs text-slate-400 mt-1">Đang dùng</div>
+                <div className="text-xs text-slate-400 mt-1">Xe đang dùng</div>
+              </GlassCard>
+              <GlassCard className="p-3 text-center">
+                <div className="text-2xl font-bold text-purple-400">{stats.reservedVehicles}</div>
+                <div className="text-xs text-slate-400 mt-1">Xe đang đợi</div>
               </GlassCard>
               <GlassCard className="p-3 text-center">
                 <div className="text-2xl font-bold text-amber-400">{stats.maintenanceVehicles}</div>
-                <div className="text-xs text-slate-400 mt-1">Bảo trì</div>
+                <div className="text-xs text-slate-400 mt-1">Xe bảo trì</div>
               </GlassCard>
               <GlassCard className="p-3 text-center">
-                <div className="text-2xl font-bold text-slate-200">{stats.totalDrivers || 4}</div>
+                <div className="text-2xl font-bold text-purple-400">{stats.reservedDrivers ?? 0}</div>
+                <div className="text-xs text-slate-400 mt-1">TX đang đợi</div>
+              </GlassCard>
+              <GlassCard className="p-3 text-center">
+                <div className="text-2xl font-bold text-slate-200">{stats.totalDrivers}</div>
                 <div className="text-xs text-slate-400 mt-1">Tổng tài xế</div>
               </GlassCard>
             </div>

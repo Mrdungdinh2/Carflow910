@@ -265,9 +265,12 @@ export function getFleetStats(): FleetStats {
     totalVehicles: vehicles.length,
     availableVehicles: vehicles.filter(v => v.status === 'available').length,
     inUseVehicles: vehicles.filter(v => v.status === 'in_use').length,
+    reservedVehicles: vehicles.filter(v => v.status === 'reserved').length,
     maintenanceVehicles: vehicles.filter(v => v.status === 'maintenance').length,
     totalDrivers: drivers.length,
     availableDrivers: drivers.filter(d => d.status === 'available').length,
+    onDutyDrivers: drivers.filter(d => d.status === 'on_duty').length,
+    reservedDrivers: drivers.filter(d => d.status === 'reserved').length,
   };
 }
 

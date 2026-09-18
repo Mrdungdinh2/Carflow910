@@ -184,6 +184,10 @@ export default function FleetPage() {
                 <div className="text-blue-400 font-bold text-xl">{stats.inUseVehicles}</div>
                 <div className="text-slate-400 text-[10px]">Đang công tác</div>
               </div>
+              <div className="flex-1 bg-purple-500/10 border border-purple-500/20 rounded-xl p-2.5 text-center">
+                <div className="text-purple-400 font-bold text-xl">{stats.reservedVehicles}</div>
+                <div className="text-slate-400 text-[10px]">Đang đợi</div>
+              </div>
               <div className="flex-1 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 text-center">
                 <div className="text-amber-400 font-bold text-xl">{stats.maintenanceVehicles}</div>
                 <div className="text-slate-400 text-[10px]">Bảo trì</div>
@@ -198,7 +202,7 @@ export default function FleetPage() {
               <div key={v.id} style={{ animationDelay: `${i * 100}ms` }} className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
                 <VehicleCard vehicle={v} />
                 {/* Badge đặt trước */}
-                {reservation && v.status === 'available' && (
+                {reservation && (v.status === 'available' || v.status === 'reserved') && (
                   <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
                     <CalendarClock className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                     <span className="text-[10px] text-purple-300 font-medium">
@@ -233,15 +237,15 @@ export default function FleetPage() {
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
            <div className="flex gap-2 text-xs mb-4">
               <div className="flex-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2.5 text-center">
-                <div className="text-emerald-400 font-bold text-xl">{drivers.filter(d => d.status === 'available').length}</div>
+                <div className="text-emerald-400 font-bold text-xl">{stats?.availableDrivers ?? drivers.filter(d => d.status === 'available').length}</div>
                 <div className="text-slate-400 text-[10px]">Sẵn sàng</div>
               </div>
               <div className="flex-1 bg-blue-500/10 border border-blue-500/20 rounded-xl p-2.5 text-center">
-                <div className="text-blue-400 font-bold text-xl">{drivers.filter(d => d.status === 'on_duty').length}</div>
+                <div className="text-blue-400 font-bold text-xl">{stats?.onDutyDrivers ?? drivers.filter(d => d.status === 'on_duty').length}</div>
                 <div className="text-slate-400 text-[10px]">Đang chạy</div>
               </div>
               <div className="flex-1 bg-purple-500/10 border border-purple-500/20 rounded-xl p-2.5 text-center">
-                <div className="text-purple-400 font-bold text-xl">{drivers.filter(d => d.status === 'reserved').length}</div>
+                <div className="text-purple-400 font-bold text-xl">{stats?.reservedDrivers ?? drivers.filter(d => d.status === 'reserved').length}</div>
                 <div className="text-slate-400 text-[10px]">Đang đợi</div>
               </div>
               <div className="flex-1 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 text-center">

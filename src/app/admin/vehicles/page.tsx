@@ -114,8 +114,10 @@ export default function VehiclesAdmin() {
     switch (status) {
       case 'available':
         return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">Sẵn sàng</span>;
+      case 'reserved':
+        return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-purple-400 bg-purple-500/10 border border-purple-500/20">Đang đợi</span>;
       case 'in_use':
-        return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-amber-400 bg-amber-500/10 border border-amber-500/20">Đang đi công tác</span>;
+        return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-blue-400 bg-blue-500/10 border border-blue-500/20">Đang đi công tác</span>;
       case 'maintenance':
         return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-rose-400 bg-rose-500/10 border border-rose-500/20">Bảo dưỡng</span>;
       default:
@@ -273,6 +275,7 @@ export default function VehiclesAdmin() {
                   className="glass-input w-full text-xs [&>option]:bg-slate-900"
                 >
                   <option value="available">Sẵn sàng (Available)</option>
+                  <option value="reserved">Đang đợi (Reserved)</option>
                   <option value="in_use">Đang đi công tác (In Use)</option>
                   <option value="maintenance">Đang bảo dưỡng (Maintenance)</option>
                 </select>

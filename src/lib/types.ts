@@ -139,9 +139,12 @@ export interface FleetStats {
   totalVehicles: number;
   availableVehicles: number;
   inUseVehicles: number;
+  reservedVehicles: number;
   maintenanceVehicles: number;
   totalDrivers: number;
   availableDrivers: number;
+  onDutyDrivers: number;
+  reservedDrivers: number;
 }
 
 // ===== DRIVER STATS =====
