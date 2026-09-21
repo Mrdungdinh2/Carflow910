@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Car, Users, ArrowLeft, Send, PlusCircle, CalendarClock } from 'lucide-react';
 import { getVehicles, getDrivers, getFleetStats } from '@/lib/vehicleStorage';
-import { getUpcomingReservations, getRequests, getResourceSchedule } from '@/lib/storage';
+import { getRequests, getResourceSchedule } from '@/lib/storage';
 import { Vehicle, Driver, FleetStats } from '@/lib/types';
 import { VehicleCard } from '@/components/VehicleCard';
 import { DriverCard } from '@/components/DriverCard';
@@ -36,20 +36,7 @@ export default function FleetPage() {
     setStats(getFleetStats());
   };
 
-  // Đề xuất tương lai đã gán xe/tài xế
-  const upcomingReservations = useMemo(() => {
-    return getUpcomingReservations();
-  }, [vehicles, drivers]);
-
-  // Helper: lấy reservation của xe
-  const getVehicleReservation = (vehicleId: string) => {
-    return upcomingReservations.find(r => r.assignedVehicleId === vehicleId);
-  };
-
-  // Helper: lấy reservation của tài xế
-  const getDriverReservation = (driverId: string) => {
-    return upcomingReservations.find(r => r.assignedDriverId === driverId);
-  };
+  // Phase 2C: Schedule l\u1ea5y tr\u1ef1c ti\u1ebfp trong m\u1ed7i card qua getResourceSchedule()
 
   const handleVehicleStatusChange = (vehicleId: string, newStatus: any) => {
     if (!canManage) return;
@@ -196,17 +183,24 @@ export default function FleetPage() {
           
           <div className="grid gap-3">
             {vehicles.map((v, i) => {
-              const reservation = getVehicleReservation(v.id);
+              const schedule = getResourceSchedule('vehicle', v.id);
+              const nextTrip = schedule[0];
               return (
               <div key={v.id} style={{ animationDelay: `${i * 100}ms` }} className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
                 <VehicleCard vehicle={v} />
-                {/* Badge đặt trước */}
-                {reservation && (v.status === 'available' || v.status === 'reserved') && (
+                {/* Mini Schedule: lịch tiếp theo */}
+                {nextTrip && (
                   <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
                     <CalendarClock className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                     <span className="text-[10px] text-purple-300 font-medium">
-                      📅 Đặt trước cho <strong>{new Date(reservation.startDateTime).toLocaleDateString('vi-VN')}</strong> • {reservation.destination}
+                      📅 Tiếp theo: <strong>{new Date(nextTrip.startDateTime).toLocaleDateString('vi-VN')}</strong>{' '}
+                      {new Date(nextTrip.startDateTime).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'})}
+                      &ndash;{new Date(nextTrip.endDateTime).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'})}
+                      {' '}&bull; {nextTrip.destination}
                     </span>
+                    {schedule.length > 1 && (
+                      <span className="text-[9px] text-purple-400/60 ml-auto">+{schedule.length - 1} lịch khác</span>
+                    )}
                   </div>
                 )}
                 {canManage && (
@@ -218,9 +212,8 @@ export default function FleetPage() {
                       className="text-xs bg-white/[0.06] border border-white/10 rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:border-cyan-500/50"
                     >
                       <option value="available">Sẵn sàng</option>
-                      <option value="reserved">Đang đợi</option>
                       <option value="maintenance">Bảo trì</option>
-                      <option value="in_use">Đang sử dụng</option>
+                      <option value="retired">Ngưng sử dụng</option>
                     </select>
                   </div>
                 )}
@@ -255,7 +248,8 @@ export default function FleetPage() {
 
           <div className="grid gap-3">
             {drivers.map((d, i) => {
-              const reservation = getDriverReservation(d.id);
+              const schedule = getResourceSchedule('driver', d.id);
+              const nextTrip = schedule[0];
               return (
               <div key={d.id} style={{ animationDelay: `${i * 100}ms` }} className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
                 <DriverCard
@@ -263,13 +257,19 @@ export default function FleetPage() {
                   onEditPhone={canManage ? (driverToEdit) => setEditingDriver(driverToEdit) : undefined}
                   onViewHistory={(driverToView) => setHistoryDriver(driverToView)}
                 />
-                {/* Badge đặt trước */}
-                {reservation && d.status === 'available' && (
+                {/* Mini Schedule: lịch tiếp theo */}
+                {nextTrip && (
                   <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
                     <CalendarClock className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                     <span className="text-[10px] text-purple-300 font-medium">
-                      📅 Đặt trước cho <strong>{new Date(reservation.startDateTime).toLocaleDateString('vi-VN')}</strong> • {reservation.destination}
+                      📅 Tiếp theo: <strong>{new Date(nextTrip.startDateTime).toLocaleDateString('vi-VN')}</strong>{' '}
+                      {new Date(nextTrip.startDateTime).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'})}
+                      &ndash;{new Date(nextTrip.endDateTime).toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'})}
+                      {' '}&bull; {nextTrip.destination}
                     </span>
+                    {schedule.length > 1 && (
+                      <span className="text-[9px] text-purple-400/60 ml-auto">+{schedule.length - 1} lịch khác</span>
+                    )}
                   </div>
                 )}
                 {canManage && (
@@ -281,8 +281,6 @@ export default function FleetPage() {
                       className="text-xs bg-white/[0.06] border border-white/10 rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:border-cyan-500/50"
                     >
                       <option value="available">Sẵn sàng</option>
-                      <option value="reserved">Đang đợi</option>
-                      <option value="on_duty">Đang lái</option>
                       <option value="day_off">Nghỉ phép</option>
                       <option value="sick_leave">Nghỉ ốm</option>
                     </select>
