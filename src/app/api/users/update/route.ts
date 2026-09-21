@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     };
 
     // 5. Hash new password if provided
-    if (newPassword?.trim() && newPassword.trim().length >= 4) {
+    if (newPassword?.trim()) {
       updatePayload.password = await bcrypt.hash(newPassword.trim(), 10);
     }
 
