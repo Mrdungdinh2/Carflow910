@@ -295,6 +295,17 @@ export async function fetchAndSyncAllFromSupabase(): Promise<boolean> {
     // Dispatch custom event for UI re-render if data changed
     if (hasChanges && typeof window !== 'undefined') {
       console.log('[CarFlow Sync] Data changed from Supabase, dispatching carflow_data_changed event');
+      // Quan trọng: Sau khi sync dữ liệu mới về, phải tính toán lại trạng thái xe/tài xế
+      // dựa trên requests hiện tại để đảm bảo đồng bộ giữa các thiết bị
+      try {
+        const { syncTodayTripStatuses } = await import('./storage');
+        const changed = syncTodayTripStatuses();
+        if (changed > 0) {
+          console.log(`[CarFlow Sync] Reconciled ${changed} vehicle/driver statuses after sync`);
+        }
+      } catch (e) {
+        console.warn('[CarFlow Sync] syncTodayTripStatuses after fetch:', e);
+      }
       window.dispatchEvent(new Event('carflow_data_changed'));
     }
 
