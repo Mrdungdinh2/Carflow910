@@ -28,17 +28,6 @@ const getNowLocalIso = (): string => {
   return `${year}-${month}-${day}T${hours}:${mins}`;
 };
 
-// Cho phép đặt xe lùi lại 3 ngày
-const get3DaysAgoLocalIso = (): string => {
-  const d = new Date();
-  d.setDate(d.getDate() - 3);
-  d.setHours(0, 0, 0, 0);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}T00:00`;
-};
-
 const getRoundedCurrentTime = () => {
   const now = new Date();
   const minutes = now.getMinutes();
@@ -130,29 +119,27 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
 
   const fleetStats = useMemo(() => getFleetStats(), []);
 
-  // Validation: Thời gian bắt đầu cho phép lùi lại tối đa 3 ngày & tối đa 30 ngày tới
+  // Validation: Chỉ cho đặt xe từ thời điểm hiện tại đến tối đa 3 ngày tới
   const validateDateRange = (start: string) => {
     if (!start) return true;
     const startDate = new Date(start);
     if (isNaN(startDate.getTime())) return true;
     
     const now = new Date();
-    // Cho phép lùi lại 3 ngày (00:00 của ngày -3)
-    const minAllowedDate = new Date(now);
-    minAllowedDate.setDate(minAllowedDate.getDate() - 3);
-    minAllowedDate.setHours(0, 0, 0, 0);
+    // 15 phút buffer cho thao tác form
+    const minAllowed = new Date(now.getTime() - 15 * 60 * 1000);
     
-    if (startDate < minAllowedDate) {
-      setDateError('Thời gian bắt đầu chỉ được lùi lại tối đa 3 ngày so với hôm nay');
+    if (startDate < minAllowed) {
+      setDateError('Thời gian bắt đầu không được chọn ở quá khứ');
       return false;
     }
     
     const maxDate = new Date(now);
-    maxDate.setDate(maxDate.getDate() + 30);
+    maxDate.setDate(maxDate.getDate() + 3);
     maxDate.setHours(23, 59, 59, 999);
     
     if (startDate > maxDate) {
-      setDateError('Thời gian bắt đầu chỉ được đăng ký trước tối đa 30 ngày');
+      setDateError('Chỉ được đặt xe trong vòng 3 ngày tới');
       return false;
     }
 
@@ -339,7 +326,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
               label="Thời gian bắt đầu"
               value={startDateTime}
               onChange={handleStartChange}
-              min={get3DaysAgoLocalIso()}
+              min={getNowLocalIso()}
               error={dateError}
             />
             <DateTimePicker

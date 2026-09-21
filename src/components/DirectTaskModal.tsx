@@ -87,12 +87,17 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
       showToast('Vui lòng nhập địa điểm / nơi đến', 'error');
       return;
     }
-    // Cho phép lùi lại tối đa 3 ngày
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    threeDaysAgo.setHours(0, 0, 0, 0);
-    if (startDateTime && new Date(startDateTime).getTime() < threeDaysAgo.getTime()) {
-      showToast('Thời gian bắt đầu chỉ được lùi lại tối đa 3 ngày so với hôm nay', 'error');
+    // Không cho đặt quá khứ, chỉ trong 3 ngày tới
+    const minThreshold = Date.now() - 15 * 60 * 1000;
+    if (startDateTime && new Date(startDateTime).getTime() < minThreshold) {
+      showToast('Thời gian bắt đầu không được chọn ở quá khứ', 'error');
+      return;
+    }
+    const max3Days = new Date();
+    max3Days.setDate(max3Days.getDate() + 3);
+    max3Days.setHours(23, 59, 59, 999);
+    if (startDateTime && new Date(startDateTime).getTime() > max3Days.getTime()) {
+      showToast('Chỉ được đặt xe trong vòng 3 ngày tới', 'error');
       return;
     }
     if (startDateTime && endDateTime && new Date(endDateTime) <= new Date(startDateTime)) {
@@ -225,11 +230,9 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
                 if (e.target.value && endDateTime) refreshAvailableResources(e.target.value, endDateTime);
               }}
                 min={(() => {
-                  const d = new Date();
-                  d.setDate(d.getDate() - 3);
-                  d.setHours(0, 0, 0, 0);
+                  const now = new Date();
                   const pad = (n: number) => String(n).padStart(2, '0');
-                  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00`;
+                  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
                 })()}
                 className="w-full px-2.5 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500/50"
               />
