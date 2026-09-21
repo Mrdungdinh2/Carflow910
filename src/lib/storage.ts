@@ -4,6 +4,7 @@ import type { VehicleRequest, RequestStatus, UserRole, ApprovalEntry, ActivityLo
 import { updateVehicleStatus, updateDriverStatus, updateVehicleOdo, addActivityLog, getVehicles, getDrivers } from './vehicleStorage';
 import { fixVietnameseUnicode } from './vietnameseUtils';
 import { pushRequestToSupabase, deleteRequestFromSupabase } from './supabaseStorage';
+import { isTCTHDepartment, isSameDepartment } from './constants';
 
 const STORAGE_KEY = 'carflow_requests';
 const ACTIVITY_KEY = 'carflow_activity';
@@ -326,10 +327,13 @@ export function assignVehicleToRequest(requestId: string, vehicleId: string, dri
 
   requests[index].assignedVehicleId = vehicleId;
   requests[index].assignedDriverId = driverId;
+  // Đảm bảo sau khi TCTH gán xe/TX, status chuyển thành 'tcth_approved' (chờ TX nhận)
+  if (!['driver_accepted', 'completed'].includes(requests[index].status)) {
+    requests[index].status = 'tcth_approved';
+  }
   requests[index].updatedAt = new Date().toISOString();
   safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(requests[index]);
-  // Phase 2B: Status là computed — không cần sync thủ công
 
   addActivityLog({
     type: 'vehicle_assigned',
@@ -349,9 +353,7 @@ export function completeTrip(requestId: string, endOdo: number): void {
 
   const req = requests[index];
   req.tripOdoEnd = endOdo;
-  // [Fix H] Đảm bảo completeTrip cũng set status = completed
   req.status = 'completed';
-  // Phase 2B: Ghi actual end time
   req.actualEndTime = new Date().toISOString();
   req.updatedAt = new Date().toISOString();
   safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
@@ -361,7 +363,6 @@ export function completeTrip(requestId: string, endOdo: number): void {
   if (req.assignedVehicleId) {
     updateVehicleOdo(req.assignedVehicleId, endOdo);
   }
-  // Phase 2B: Status là computed — không cần sync thủ công
 
   addActivityLog({
     type: 'trip_completed',
@@ -373,17 +374,17 @@ export function completeTrip(requestId: string, endOdo: number): void {
 }
 
 export function getRequestsByDepartment(department: string): VehicleRequest[] {
-  return getRequests().filter(r => r.department === department);
+  return getRequests().filter(r => isSameDepartment(r.department, department));
 }
 
 export function getPendingForRole(role: UserRole, userId?: string, department?: string): VehicleRequest[] {
   const requests = getRequests();
   switch (role) {
-    case 'dept_head': return requests.filter(r => r.status === 'pending' && (!department || r.department === department));
+    case 'dept_head': return requests.filter(r => r.status === 'pending' && (!department || isSameDepartment(r.department, department)));
     case 'tcth': return requests.filter(r =>
       r.status === 'dept_approved' ||
-      // TCTH cũng duyệt pending của chính phòng TCTH (vì phòng TCTH không có dept_head riêng)
-      (r.status === 'pending' && department && r.department === department)
+      // TCTH cũng thấy đề xuất 'pending' của phòng TCTH (vì TCTH duyệt cấp phòng cho chính phòng mình)
+      (r.status === 'pending' && isTCTHDepartment(r.department))
     );
     case 'director':
     case 'admin': return requests.filter(r => ['pending', 'dept_approved'].includes(r.status));

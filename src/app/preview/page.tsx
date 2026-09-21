@@ -19,7 +19,7 @@ import { getAvailableVehiclesForTimeRange, getAvailableDriversForTimeRange } fro
 import { getRequests, deleteRequest, forceCompleteRequest } from '@/lib/storage';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/Toast';
-import { ROLE_CONFIG } from '@/lib/constants';
+import { ROLE_CONFIG, isSameDepartment, isTCTHDepartment } from '@/lib/constants';
 import type { VehicleRequest, Vehicle, Driver, RejectionReason, ApprovalEntry as ApprovalEntryType } from '@/lib/types';
 
 function PreviewContent() {
@@ -91,8 +91,8 @@ function PreviewContent() {
   const canViewRequest = () => {
     if (!user || !request) return false;
     if (['tcth', 'director', 'admin'].includes(user.role)) return true;
-    if (user.role === 'dept_head') return request.department === user.department;
-    if (user.role === 'staff') return request.requesterId === user.id || request.department === user.department;
+    if (user.role === 'dept_head') return isSameDepartment(user.department, request.department);
+    if (user.role === 'staff') return request.requesterId === user.id || isSameDepartment(user.department, request.department);
     if (user.role === 'driver') return request.assignedDriverId === user.id;
     return false;
   };
@@ -120,8 +120,14 @@ function PreviewContent() {
   const canApprove = () => {
     if (!user) return false;
     // Dept head can approve pending requests (or draft from their staff — auto-submit)
-    if (user.role === 'dept_head' && user.department === request.department && (request.status === 'pending' || (request.status === 'draft' && !isOwner))) return true;
-    if (user.role === 'tcth' && request.status === 'dept_approved') return true;
+    if (user.role === 'dept_head' && isSameDepartment(user.department, request.department) && (request.status === 'pending' || (request.status === 'draft' && !isOwner))) return true;
+    // TCTH can approve dept_approved requests from any department, OR pending requests from TCTH department
+    if (user.role === 'tcth') {
+      if (request.status === 'dept_approved') return true;
+      if (request.status === 'pending' && isTCTHDepartment(request.department)) return true;
+    }
+    // Admin & Ban Giám đốc can also approve
+    if (['admin', 'director'].includes(user.role) && ['pending', 'dept_approved'].includes(request.status)) return true;
     return false;
   };
 
@@ -133,7 +139,10 @@ function PreviewContent() {
 
   const canSubmit = () => {
     if (!user) return false;
-    if (user.role === 'dept_head' && user.department === request.department && (request.status === 'draft' || request.status === 'rejected')) {
+    if (user.role === 'dept_head' && isSameDepartment(user.department, request.department) && (request.status === 'draft' || request.status === 'rejected')) {
+      return true;
+    }
+    if (user.role === 'tcth' && isTCTHDepartment(user.department) && (request.status === 'draft' || request.status === 'rejected')) {
       return true;
     }
     return (request.status === 'draft' || request.status === 'rejected') && isOwner;
@@ -335,8 +344,8 @@ function PreviewContent() {
   const handleSubmit = () => {
     if (!user || !request) return;
 
-    if (user.role === 'dept_head') {
-      // Nếu là Lãnh đạo phòng: Gửi đề xuất + tự duyệt phòng -> Chuyển sang Phòng TCTH duyệt & gán xe
+    if (user.role === 'dept_head' || user.role === 'tcth') {
+      // Nếu là Lãnh đạo phòng / TCTH: Gửi đề xuất + tự duyệt cấp phòng -> Chuyển sang bước gán xe
       const submitEntry: Omit<ApprovalEntryType, 'id' | 'timestamp'> = {
         action: 'submit',
         by: user.id,
@@ -351,11 +360,11 @@ function PreviewContent() {
         by: user.id,
         byName: user.name,
         byRole: user.role,
-        note: 'Trưởng phòng phê duyệt & Gửi Phòng TCTH',
+        note: `${ROLE_CONFIG[user.role].label} phê duyệt đề xuất`,
       };
       addApprovalEntry(request.id, approveEntry as ApprovalEntryType);
 
-      showToast('Đã gửi đề xuất cho Phòng TCTH duyệt & gán xe!', 'success');
+      showToast('Đã gửi đề xuất & chuyển sang bước gán xe!', 'success');
     } else {
       // Nhân viên gửi duyệt -> Trưởng phòng duyệt
       const entry: Omit<ApprovalEntryType, 'id' | 'timestamp'> = {

@@ -22,6 +22,21 @@ export const DEPARTMENTS = [
   'Phòng Bán lẻ',
 ];
 
+export function isTCTHDepartment(dept?: string): boolean {
+  if (!dept) return false;
+  const normalized = dept.toLowerCase().replace(/phòng\s*/gi, '').replace(/\s+/g, '');
+  return normalized.includes('tcth') || normalized.includes('tổchứctổnghợp') || normalized.includes('tochuctonghop');
+}
+
+export function isSameDepartment(dept1?: string, dept2?: string): boolean {
+  if (!dept1 || !dept2) return false;
+  if (dept1 === dept2) return true;
+  if (isTCTHDepartment(dept1) && isTCTHDepartment(dept2)) return true;
+  const norm1 = dept1.toLowerCase().replace(/phòng\s*/gi, '').replace(/\s+/g, '').trim();
+  const norm2 = dept2.toLowerCase().replace(/phòng\s*/gi, '').replace(/\s+/g, '').trim();
+  return norm1 === norm2;
+}
+
 // ===== ROUTE SUGGESTIONS =====
 export const ROUTE_SUGGESTIONS = [
   'Trụ sở NHNN TP.HCM',
