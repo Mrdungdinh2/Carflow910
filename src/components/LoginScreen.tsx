@@ -71,7 +71,10 @@ export default function LoginScreen() {
             CarFlow<span className="text-[#f4c3af]">910</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1 font-medium">
-            Hệ thống Đăng ký & Quản lý điều xe công tác • Chi nhánh Nam Sài Gòn
+            Hệ thống Đăng ký &amp; Quản lý điều xe công tác
+          </p>
+          <p className="text-xs text-slate-400 font-medium">
+            Chi nhánh Nam Sài Gòn
           </p>
         </div>
 

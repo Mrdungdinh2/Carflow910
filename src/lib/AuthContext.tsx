@@ -37,6 +37,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   }, []);
 
+  // Auto-logout sau 5 phút không tương tác
+  const IDLE_TIMEOUT = 5 * 60 * 1000; // 5 phút
+
+  useEffect(() => {
+    if (!user) return; // Chỉ track khi đã đăng nhập
+
+    let idleTimer: ReturnType<typeof setTimeout>;
+
+    const resetTimer = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        authLogout();
+        setUser(null);
+        // Force redirect về login
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+      }, IDLE_TIMEOUT);
+    };
+
+    // Các sự kiện coi là "tương tác"
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => window.addEventListener(event, resetTimer, { passive: true }));
+
+    // Khởi tạo timer lần đầu
+    resetTimer();
+
+    return () => {
+      clearTimeout(idleTimer);
+      events.forEach(event => window.removeEventListener(event, resetTimer));
+    };
+  }, [user]);
+
   const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout]);
 
   return (
