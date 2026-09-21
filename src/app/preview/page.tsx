@@ -142,7 +142,13 @@ function PreviewContent() {
   const canDriverAccept = () => {
     if (!user) return false;
     if (user.role !== 'driver' || request.status !== 'tcth_approved' || request.assignedDriverId !== user.id) return false;
-    // [Fix D] Ng\u0103n TX nh\u1eadn nhi\u1ec7m v\u1ee5 th\u1ee9 2 khi \u0111ang ch\u1ea1y nhi\u1ec7m v\u1ee5 kh\u00e1c
+    // Tài xế chỉ được nhận nhiệm vụ khi ngày hiện tại trùng với ngày đề xuất
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tripDay = new Date(request.startDateTime);
+    tripDay.setHours(0, 0, 0, 0);
+    if (tripDay.getTime() !== today.getTime()) return false;
+    // Ngăn TX nhận nhiệm vụ thứ 2 khi đang chạy nhiệm vụ khác
     const allReqs = getRequests();
     const hasActiveTrip = allReqs.some(r =>
       r.id !== request.id &&
@@ -161,6 +167,17 @@ function PreviewContent() {
       r.status === 'driver_accepted' &&
       r.assignedDriverId === user.id
     );
+  };
+
+  // Kiểm tra đề xuất có phải ngày tương lai không (chưa đến ngày)
+  const isFutureTripForDriver = () => {
+    if (!user || user.role !== 'driver') return false;
+    if (request.status !== 'tcth_approved' || request.assignedDriverId !== user.id) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tripDay = new Date(request.startDateTime);
+    tripDay.setHours(0, 0, 0, 0);
+    return tripDay.getTime() > today.getTime();
   };
 
   const canDriverComplete = () => {
@@ -689,6 +706,13 @@ function PreviewContent() {
             <div className="w-full py-3 px-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
               <p className="text-xs font-semibold text-amber-300">⚠️ Bạn đang thực hiện nhiệm vụ khác</p>
               <p className="text-[10px] text-amber-300/60 mt-0.5">Hoàn thành nhiệm vụ hiện tại trước khi nhận nhiệm vụ mới</p>
+            </div>
+          )}
+
+          {isFutureTripForDriver() && (
+            <div className="w-full py-3 px-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
+              <p className="text-xs font-semibold text-purple-300">🗓️ Chuyến này vào ngày {new Date(request.startDateTime).toLocaleDateString('vi-VN')}</p>
+              <p className="text-[10px] text-purple-300/60 mt-0.5">Bạn chỉ có thể nhận nhiệm vụ khi đến đúng ngày công tác</p>
             </div>
           )}
 

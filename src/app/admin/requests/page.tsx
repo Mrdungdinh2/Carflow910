@@ -537,30 +537,47 @@ export default function AdminRequestsPage() {
         {viewMode === 'stats' && (
           <div className="space-y-4 animate-slide-up">
             {/* Overview Cards */}
-            <div className={`grid ${staleRequests.length > 0 ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'} gap-3`}>
-              <GlassCard className="p-3 text-center">
+            {/* Status Detail Cards - Click to filter */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <GlassCard className="p-3 text-center cursor-pointer hover:bg-white/[0.04] transition-all" onClick={() => { setStatusFilter('all'); setViewMode('list'); }}>
                 <div className="text-2xl font-bold text-white">{stats.total}</div>
                 <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Tổng đề xuất</div>
               </GlassCard>
-              <GlassCard className="p-3 text-center">
-                <div className="text-2xl font-bold text-amber-400">{stats.inProgress}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Đang xử lý</div>
+              <GlassCard className="p-3 text-center cursor-pointer hover:bg-amber-500/5 transition-all border-amber-500/10" onClick={() => { setStatusFilter('pending'); setViewMode('list'); }}>
+                <div className="text-2xl font-bold text-amber-400">{stats.pending}</div>
+                <div className="text-[10px] text-amber-300/70 mt-0.5 font-medium">Chờ TP duyệt</div>
               </GlassCard>
-              <GlassCard className="p-3 text-center">
+              <GlassCard className="p-3 text-center cursor-pointer hover:bg-blue-500/5 transition-all border-blue-500/10" onClick={() => { setStatusFilter('dept_approved'); setViewMode('list'); }}>
+                <div className="text-2xl font-bold text-blue-400">{stats.deptApproved}</div>
+                <div className="text-[10px] text-blue-300/70 mt-0.5 font-medium">Chờ TCTH duyệt</div>
+              </GlassCard>
+              <GlassCard className="p-3 text-center cursor-pointer hover:bg-violet-500/5 transition-all border-violet-500/10" onClick={() => { setStatusFilter('tcth_approved'); setViewMode('list'); }}>
+                <div className="text-2xl font-bold text-violet-400">{stats.tcthApproved}</div>
+                <div className="text-[10px] text-violet-300/70 mt-0.5 font-medium">Đã gán xe (Chờ TX)</div>
+              </GlassCard>
+              <GlassCard className="p-3 text-center cursor-pointer hover:bg-cyan-500/5 transition-all border-cyan-500/10" onClick={() => { setStatusFilter('driver_accepted'); setViewMode('list'); }}>
+                <div className="text-2xl font-bold text-cyan-400">{stats.driverAccepted}</div>
+                <div className="text-[10px] text-cyan-300/70 mt-0.5 font-medium">Đang thực hiện</div>
+              </GlassCard>
+              <GlassCard className="p-3 text-center cursor-pointer hover:bg-emerald-500/5 transition-all border-emerald-500/10" onClick={() => { setStatusFilter('completed'); setViewMode('list'); }}>
                 <div className="text-2xl font-bold text-emerald-400">{stats.completed}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Hoàn thành</div>
+                <div className="text-[10px] text-emerald-300/70 mt-0.5 font-medium">Hoàn thành</div>
               </GlassCard>
-              <GlassCard className="p-3 text-center">
+              <GlassCard className="p-3 text-center cursor-pointer hover:bg-red-500/5 transition-all border-red-500/10" onClick={() => { setStatusFilter('rejected'); setViewMode('list'); }}>
                 <div className="text-2xl font-bold text-red-400">{stats.rejected}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 font-medium">Từ chối</div>
+                <div className="text-[10px] text-red-300/70 mt-0.5 font-medium">Từ chối</div>
               </GlassCard>
-              {staleRequests.length > 0 && (
-                <GlassCard className="p-3 text-center border-orange-500/30 cursor-pointer hover:bg-orange-500/5 transition-all" onClick={() => setShowStaleReview(true)}>
-                  <div className="text-2xl font-bold text-orange-400">{staleRequests.length}</div>
-                  <div className="text-[10px] text-orange-300/70 mt-0.5 font-medium">⚠️ Quá hạn</div>
-                </GlassCard>
-              )}
+              <GlassCard className="p-3 text-center cursor-pointer hover:bg-slate-500/5 transition-all border-slate-500/10" onClick={() => { setStatusFilter('draft'); setViewMode('list'); }}>
+                <div className="text-2xl font-bold text-slate-400">{stats.draft}</div>
+                <div className="text-[10px] text-slate-400/70 mt-0.5 font-medium">Nháp</div>
+              </GlassCard>
             </div>
+            {staleRequests.length > 0 && (
+              <GlassCard className="p-3 text-center border-orange-500/30 cursor-pointer hover:bg-orange-500/5 transition-all" onClick={() => setShowStaleReview(true)}>
+                <div className="text-2xl font-bold text-orange-400">{staleRequests.length}</div>
+                <div className="text-[10px] text-orange-300/70 mt-0.5 font-medium">⚠️ Quá hạn</div>
+              </GlassCard>
+            )}
 
             {/* Status Pipeline */}
             <GlassCard className="p-4">
