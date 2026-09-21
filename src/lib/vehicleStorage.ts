@@ -261,16 +261,64 @@ export function deleteDriver(id: string): void {
 export function getFleetStats(): FleetStats {
   const vehicles = getVehicles();
   const drivers = getDrivers();
+  
+  // Import requests to compute real-time status
+  let requests: any[] = [];
+  try {
+    requests = JSON.parse(localStorage.getItem('carflow_requests') || '[]');
+  } catch {}
+  
+  const nowIso = new Date().toISOString();
+  
+  // Compute: which vehicles/drivers are CURRENTLY active (trip happening right now)
+  const inUseVehicleIds = new Set<string>();
+  const onDutyDriverIds = new Set<string>();
+  
+  // Count scheduled trips for today and tomorrow
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+  const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const tomorrowEnd = new Date(todayEnd); tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+  
+  let scheduledToday = 0;
+  let scheduledTomorrow = 0;
+  
+  for (const r of requests) {
+    if (!['tcth_approved', 'driver_accepted'].includes(r.status)) continue;
+    const start = r.startDateTime || '';
+    const end = r.endDateTime || '';
+    
+    // Currently active?
+    if (start <= nowIso && end >= nowIso) {
+      if (r.assignedVehicleId) inUseVehicleIds.add(r.assignedVehicleId);
+      if (r.assignedDriverId) onDutyDriverIds.add(r.assignedDriverId);
+    }
+    
+    // Scheduled today (future, not yet started)?
+    if (start > nowIso && start <= todayEnd.toISOString() && r.assignedVehicleId) {
+      scheduledToday++;
+    }
+    
+    // Scheduled tomorrow?
+    if (start >= tomorrowStart.toISOString() && start <= tomorrowEnd.toISOString() && r.assignedVehicleId) {
+      scheduledTomorrow++;
+    }
+  }
+  
   return {
     totalVehicles: vehicles.length,
-    availableVehicles: vehicles.filter(v => v.status === 'available').length,
-    inUseVehicles: vehicles.filter(v => v.status === 'in_use').length,
-    reservedVehicles: vehicles.filter(v => v.status === 'reserved').length,
+    availableVehicles: vehicles.filter(v =>
+      v.status !== 'maintenance' && v.status !== 'retired' && !inUseVehicleIds.has(v.id)
+    ).length,
+    inUseVehicles: inUseVehicleIds.size,
     maintenanceVehicles: vehicles.filter(v => v.status === 'maintenance').length,
     totalDrivers: drivers.length,
-    availableDrivers: drivers.filter(d => d.status === 'available').length,
-    onDutyDrivers: drivers.filter(d => d.status === 'on_duty').length,
-    reservedDrivers: drivers.filter(d => d.status === 'reserved').length,
+    availableDrivers: drivers.filter(d =>
+      d.status !== 'day_off' && d.status !== 'sick_leave' && !onDutyDriverIds.has(d.id)
+    ).length,
+    onDutyDrivers: onDutyDriverIds.size,
+    scheduledTripsToday: scheduledToday,
+    scheduledTripsTomorrow: scheduledTomorrow,
   };
 }
 

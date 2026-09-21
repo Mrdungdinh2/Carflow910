@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Car, Users, ArrowLeft, Send, PlusCircle, CalendarClock } from 'lucide-react';
 import { getVehicles, getDrivers, getFleetStats } from '@/lib/vehicleStorage';
-import { getUpcomingReservations, syncTodayTripStatuses, getRequests } from '@/lib/storage';
+import { getUpcomingReservations, getRequests, getResourceSchedule } from '@/lib/storage';
 import { Vehicle, Driver, FleetStats } from '@/lib/types';
 import { VehicleCard } from '@/components/VehicleCard';
 import { DriverCard } from '@/components/DriverCard';
@@ -100,8 +100,7 @@ export default function FleetPage() {
       router.push('/login');
       return;
     }
-    // [Fix C] Tự động khóa xe/TX cho đề xuất hôm nay khi load trang
-    syncTodayTripStatuses();
+    // Phase 2B: Status là computed — không cần syncTodayTripStatuses
     refreshData();
   }, [user, router]);
 
@@ -185,8 +184,8 @@ export default function FleetPage() {
                 <div className="text-slate-400 text-[10px]">Đang công tác</div>
               </div>
               <div className="flex-1 bg-purple-500/10 border border-purple-500/20 rounded-xl p-2.5 text-center">
-                <div className="text-purple-400 font-bold text-xl">{stats.reservedVehicles}</div>
-                <div className="text-slate-400 text-[10px]">Đang đợi</div>
+                <div className="text-purple-400 font-bold text-xl">{stats.scheduledTripsToday}</div>
+                <div className="text-slate-400 text-[10px]">Lịch hôm nay</div>
               </div>
               <div className="flex-1 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 text-center">
                 <div className="text-amber-400 font-bold text-xl">{stats.maintenanceVehicles}</div>
@@ -245,8 +244,8 @@ export default function FleetPage() {
                 <div className="text-slate-400 text-[10px]">Đang chạy</div>
               </div>
               <div className="flex-1 bg-purple-500/10 border border-purple-500/20 rounded-xl p-2.5 text-center">
-                <div className="text-purple-400 font-bold text-xl">{stats?.reservedDrivers ?? drivers.filter(d => d.status === 'reserved').length}</div>
-                <div className="text-slate-400 text-[10px]">Đang đợi</div>
+                <div className="text-purple-400 font-bold text-xl">{stats?.scheduledTripsTomorrow ?? 0}</div>
+                <div className="text-slate-400 text-[10px]">Lịch ngày mai</div>
               </div>
               <div className="flex-1 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 text-center">
                 <div className="text-amber-400 font-bold text-xl">{drivers.filter(d => d.status === 'day_off' || d.status === 'sick_leave').length}</div>

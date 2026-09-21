@@ -98,6 +98,10 @@ export interface VehicleRequest {
   tripOdoStart?: number;
   tripOdoEnd?: number;
 
+  // Actual times (Phase 2A: track when trip ACTUALLY started/ended)
+  actualStartTime?: string;
+  actualEndTime?: string;
+
   // Approval trail
   approvalHistory: ApprovalEntry[];
 }
@@ -139,12 +143,27 @@ export interface FleetStats {
   totalVehicles: number;
   availableVehicles: number;
   inUseVehicles: number;
-  reservedVehicles: number;
   maintenanceVehicles: number;
   totalDrivers: number;
   availableDrivers: number;
   onDutyDrivers: number;
-  reservedDrivers: number;
+  scheduledTripsToday: number;
+  scheduledTripsTomorrow: number;
+}
+
+// ===== RESOURCE BLOCK =====
+export type BlockType = 'maintenance' | 'leave' | 'block';
+
+export interface ResourceBlock {
+  id: string;
+  resourceType: 'vehicle' | 'driver';
+  resourceId: string;
+  blockType: BlockType;
+  startTime: string;
+  endTime: string;
+  reason?: string;
+  createdBy?: string;
+  createdAt?: string;
 }
 
 // ===== DRIVER STATS =====

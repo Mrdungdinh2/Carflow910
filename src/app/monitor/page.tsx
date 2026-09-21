@@ -71,16 +71,16 @@ export default function MonitorPage() {
                 <div className="text-xs text-slate-400 mt-1">Xe đang dùng</div>
               </GlassCard>
               <GlassCard className="p-3 text-center">
-                <div className="text-2xl font-bold text-purple-400">{stats.reservedVehicles}</div>
-                <div className="text-xs text-slate-400 mt-1">Xe đang đợi</div>
+                <div className="text-2xl font-bold text-purple-400">{stats.scheduledTripsToday}</div>
+                <div className="text-xs text-slate-400 mt-1">Lịch hôm nay</div>
               </GlassCard>
               <GlassCard className="p-3 text-center">
                 <div className="text-2xl font-bold text-amber-400">{stats.maintenanceVehicles}</div>
                 <div className="text-xs text-slate-400 mt-1">Xe bảo trì</div>
               </GlassCard>
               <GlassCard className="p-3 text-center">
-                <div className="text-2xl font-bold text-purple-400">{stats.reservedDrivers ?? 0}</div>
-                <div className="text-xs text-slate-400 mt-1">TX đang đợi</div>
+                <div className="text-2xl font-bold text-purple-400">{stats.scheduledTripsTomorrow ?? 0}</div>
+                <div className="text-xs text-slate-400 mt-1">Lịch ngày mai</div>
               </GlassCard>
               <GlassCard className="p-3 text-center">
                 <div className="text-2xl font-bold text-slate-200">{stats.totalDrivers}</div>

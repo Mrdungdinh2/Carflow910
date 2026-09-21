@@ -29,85 +29,87 @@ export function getUpcomingReservations(): VehicleRequest[] {
 }
 
 /**
- * Auto-sync trạng thái xe & tài xế dựa trên các chuyến công tác active/tương lai/quá hạn.
- * Gọi hàm này khi app load, refresh trang, hoặc sau khi thay đổi trạng thái đề xuất.
- * @returns Số xe/tài xế đã được cập nhật trạng thái
+ * [DEPRECATED — Phase 2B] No-op stub giữ lại cho backward compat.
+ * Status xe/tài xế giờ được tính toán (computed) tại thời điểm đọc,
+ * KHÔNG còn ghi đè vào vehicle.status / driver.status.
+ * @returns Luôn trả 0
  */
 export function syncTodayTripStatuses(): number {
-  if (typeof window === 'undefined') return 0;
-  const requests = getRequests();
+  return 0;
+}
+
+/**
+ * Tính trạng thái HIỆN TẠI (computed) của vehicle dựa trên trips đang diễn ra.
+ * KHÔNG ghi đè vehicle.status — chỉ trả về giá trị tính toán.
+ */
+export function getVehicleCurrentStatus(vehicleId: string): VehicleStatus {
   const vehicles = getVehicles();
-  const drivers = getDrivers();
+  const vehicle = vehicles.find(v => v.id === vehicleId);
+  if (!vehicle) return 'available';
+  
+  // Master status ưu tiên (admin set thủ công)
+  if (vehicle.status === 'maintenance' || vehicle.status === 'retired') {
+    return vehicle.status;
+  }
+  
   const nowIso = new Date().toISOString();
-  let count = 0;
+  const requests = getRequests();
+  
+  // Có chuyến đang diễn ra NGAY BÂY GIỜ?
+  const activeReq = requests.find(r =>
+    r.assignedVehicleId === vehicleId &&
+    ['tcth_approved', 'driver_accepted'].includes(r.status) &&
+    r.startDateTime <= nowIso &&
+    r.endDateTime >= nowIso
+  );
+  
+  return activeReq ? 'in_use' : 'available';
+}
 
-  // Sync vehicle status
-  for (const v of vehicles) {
-    if (v.status === 'maintenance' || v.status === 'retired') continue;
-
-    // Chuyến đang diễn ra ngay thời điểm hiện tại
-    const activeReq = requests.find(r =>
-      r.assignedVehicleId === v.id &&
-      ['tcth_approved', 'driver_accepted'].includes(r.status) &&
-      r.startDateTime <= nowIso &&
-      r.endDateTime >= nowIso
-    );
-
-    // Chuyến trong tương lai
-    const futureReq = requests.find(r =>
-      r.assignedVehicleId === v.id &&
-      ['tcth_approved', 'driver_accepted'].includes(r.status) &&
-      r.startDateTime > nowIso
-    );
-
-    let targetStatus: VehicleStatus = 'available';
-    if (activeReq) {
-      targetStatus = 'in_use';
-    } else if (futureReq) {
-      targetStatus = 'reserved';
-    } else {
-      targetStatus = 'available';
-    }
-
-    if (v.status !== targetStatus) {
-      updateVehicleStatus(v.id, targetStatus);
-      count++;
-    }
+/**
+ * Tính trạng thái HIỆN TẠI (computed) của driver dựa trên trips đang diễn ra.
+ */
+export function getDriverCurrentStatus(driverId: string): DriverStatus {
+  const drivers = getDrivers();
+  const driver = drivers.find(d => d.id === driverId);
+  if (!driver) return 'available';
+  
+  if (driver.status === 'day_off' || driver.status === 'sick_leave') {
+    return driver.status;
   }
+  
+  const nowIso = new Date().toISOString();
+  const requests = getRequests();
+  
+  const activeReq = requests.find(r =>
+    r.assignedDriverId === driverId &&
+    ['tcth_approved', 'driver_accepted'].includes(r.status) &&
+    r.startDateTime <= nowIso &&
+    r.endDateTime >= nowIso
+  );
+  
+  return activeReq ? 'on_duty' : 'available';
+}
 
-  // Sync driver status
-  for (const d of drivers) {
-    if (d.status === 'day_off' || d.status === 'sick_leave') continue;
-
-    const activeReq = requests.find(r =>
-      r.assignedDriverId === d.id &&
-      ['tcth_approved', 'driver_accepted'].includes(r.status) &&
-      r.startDateTime <= nowIso &&
-      r.endDateTime >= nowIso
-    );
-
-    const futureReq = requests.find(r =>
-      r.assignedDriverId === d.id &&
-      ['tcth_approved', 'driver_accepted'].includes(r.status) &&
-      r.startDateTime > nowIso
-    );
-
-    let targetStatus: DriverStatus = 'available';
-    if (activeReq) {
-      targetStatus = 'on_duty';
-    } else if (futureReq) {
-      targetStatus = 'reserved';
-    } else {
-      targetStatus = 'available';
-    }
-
-    if (d.status !== targetStatus) {
-      updateDriverStatus(d.id, targetStatus);
-      count++;
-    }
-  }
-
-  return count;
+/**
+ * Lấy lịch tương lai của resource (TÁCH BIỆT khỏi current status)
+ */
+export function getResourceSchedule(
+  resourceType: 'vehicle' | 'driver',
+  resourceId: string,
+  fromDate?: string,
+  toDate?: string
+): VehicleRequest[] {
+  const now = fromDate || new Date().toISOString();
+  const end = toDate || new Date(Date.now() + 7 * 86400000).toISOString();
+  const requests = getRequests();
+  
+  return requests.filter(r =>
+    (resourceType === 'vehicle' ? r.assignedVehicleId : r.assignedDriverId) === resourceId &&
+    ['tcth_approved', 'driver_accepted'].includes(r.status) &&
+    r.endDateTime >= now &&
+    r.startDateTime <= end
+  ).sort((a, b) => a.startDateTime.localeCompare(b.startDateTime));
 }
 
 function generateId(): string {
@@ -219,8 +221,8 @@ export function deleteRequest(id: string): void {
   const requests = getRequests().filter(r => r.id !== id);
   safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   deleteRequestFromSupabase(id);
-  // Sync trạng thái xe/TX sau khi xóa đề xuất (giải phóng xe/TX nếu cần)
-  syncTodayTripStatuses();
+  // Phase 2B: Status là computed — không cần gọi syncTodayTripStatuses
+  window.dispatchEvent(new Event('carflow_data_changed'));
 }
 
 export function addApprovalEntry(
@@ -265,18 +267,19 @@ export function addApprovalEntry(
     }
   } else if (fullEntry.action === 'driver_accept') {
     requests[index].status = 'driver_accepted';
+    // Phase 2B: Ghi actual start time khi tài xế nhận nhiệm vụ
+    requests[index].actualStartTime = new Date().toISOString();
   } else if (fullEntry.action === 'driver_complete') {
     requests[index].status = 'completed';
+    // Phase 2B: Ghi actual end time khi hoàn thành
+    requests[index].actualEndTime = new Date().toISOString();
   }
 
   requests[index].updatedAt = new Date().toISOString();
   safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(requests[index]);
 
-  // Sync trạng thái xe/TX theo thời gian thực sau mọi thay đổi trạng thái đề xuất
-  if (['reject', 'driver_accept', 'driver_complete'].includes(fullEntry.action)) {
-    syncTodayTripStatuses();
-  }
+  // Phase 2B: Status là computed — không cần sync trạng thái xe/TX thủ công
 
   // Log activity
   const req = requests[index];
@@ -320,9 +323,7 @@ export function assignVehicleToRequest(requestId: string, vehicleId: string, dri
   requests[index].updatedAt = new Date().toISOString();
   safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(requests[index]);
-
-  // Update vehicle & driver status theo thời gian thực của chuyến đi
-  syncTodayTripStatuses();
+  // Phase 2B: Status là computed — không cần sync thủ công
 
   addActivityLog({
     type: 'vehicle_assigned',
@@ -344,6 +345,8 @@ export function completeTrip(requestId: string, endOdo: number): void {
   req.tripOdoEnd = endOdo;
   // [Fix H] Đảm bảo completeTrip cũng set status = completed
   req.status = 'completed';
+  // Phase 2B: Ghi actual end time
+  req.actualEndTime = new Date().toISOString();
   req.updatedAt = new Date().toISOString();
   safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(req);
@@ -352,9 +355,7 @@ export function completeTrip(requestId: string, endOdo: number): void {
   if (req.assignedVehicleId) {
     updateVehicleOdo(req.assignedVehicleId, endOdo);
   }
-
-  // Sync trạng thái xe/TX dựa trên toàn bộ lịch trình (xét cả chuyến tương lai)
-  syncTodayTripStatuses();
+  // Phase 2B: Status là computed — không cần sync thủ công
 
   addActivityLog({
     type: 'trip_completed',
@@ -433,8 +434,7 @@ export function createDirectTask(data: {
     pushRequestToSupabase(newRequest);
   }
 
-  // Update vehicle & driver status theo thời gian thực của chuyến đi
-  syncTodayTripStatuses();
+  // Phase 2B: Status là computed — không cần sync thủ công
 
   addActivityLog({
     type: 'vehicle_assigned',
@@ -508,8 +508,7 @@ export function forceCompleteRequest(
   safeLocalStorageSet(STORAGE_KEY, JSON.stringify(requests));
   pushRequestToSupabase(req);
 
-  // Sync trạng thái xe/TX dựa trên toàn bộ lịch trình (xét cả chuyến tương lai)
-  syncTodayTripStatuses();
+  // Phase 2B: Status là computed — không cần sync thủ công
 
   // Ghi activity log
   addActivityLog({

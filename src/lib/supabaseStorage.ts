@@ -1,7 +1,7 @@
 'use client';
 
 import { supabase, isSupabaseConfigured } from './supabase';
-import type { VehicleRequest, Vehicle, Driver, User, ActivityLog } from './types';
+import type { VehicleRequest, Vehicle, Driver, User, ActivityLog, ResourceBlock } from './types';
 
 // Storage keys
 const REQUESTS_KEY = 'carflow_requests';
@@ -10,6 +10,7 @@ const DRIVERS_KEY = 'carflow_drivers';
 const USERS_KEY = 'carflow_users';
 const ACTIVITY_KEY = 'carflow_activity';
 const DEPARTMENTS_KEY = 'carflow_departments';
+const BLOCKS_KEY = 'carflow_blocks';
 
 // Giới hạn số lượng requests lưu trong localStorage để tránh vượt 5MB
 const MAX_LOCAL_REQUESTS = 200;
@@ -111,6 +112,8 @@ export function mapRequestFromDb(db: any): VehicleRequest {
     tripOdoStart: db.trip_odo_start ?? undefined,
     tripOdoEnd: db.trip_odo_end ?? undefined,
     approvalHistory: Array.isArray(db.approval_history) ? db.approval_history : JSON.parse(db.approval_history || '[]'),
+    actualStartTime: db.actual_start_time || undefined,
+    actualEndTime: db.actual_end_time || undefined,
   };
 }
 
@@ -134,6 +137,8 @@ export function mapRequestToDb(req: Partial<VehicleRequest>): any {
     trip_odo_start: req.tripOdoStart ?? null,
     trip_odo_end: req.tripOdoEnd ?? null,
     approval_history: req.approvalHistory || [],
+    actual_start_time: req.actualStartTime || null,
+    actual_end_time: req.actualEndTime || null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -292,20 +297,26 @@ export async function fetchAndSyncAllFromSupabase(): Promise<boolean> {
       safeLocalStorageSet(DEPARTMENTS_KEY, incoming);
     }
 
+    // 6. Fetch Resource Blocks
+    const { data: blocksData, error: blocksError } = await supabase.from('resource_blocks').select('*').order('start_time');
+    if (blocksError) {
+      // Table may not exist yet (before migration) — safe to skip
+      if (!blocksError.message?.includes('does not exist')) {
+        console.error('[CarFlow Sync] Error fetching resource_blocks:', blocksError.message);
+      }
+    } else if (blocksData) {
+      const blocks: ResourceBlock[] = blocksData.map(mapBlockFromDb);
+      const incoming = JSON.stringify(blocks);
+      const current = localStorage.getItem(BLOCKS_KEY);
+      if (current !== incoming) {
+        hasChanges = true;
+      }
+      safeLocalStorageSet(BLOCKS_KEY, incoming);
+    }
+
     // Dispatch custom event for UI re-render if data changed
     if (hasChanges && typeof window !== 'undefined') {
       console.log('[CarFlow Sync] Data changed from Supabase, dispatching carflow_data_changed event');
-      // Quan trọng: Sau khi sync dữ liệu mới về, phải tính toán lại trạng thái xe/tài xế
-      // dựa trên requests hiện tại để đảm bảo đồng bộ giữa các thiết bị
-      try {
-        const { syncTodayTripStatuses } = await import('./storage');
-        const changed = syncTodayTripStatuses();
-        if (changed > 0) {
-          console.log(`[CarFlow Sync] Reconciled ${changed} vehicle/driver statuses after sync`);
-        }
-      } catch (e) {
-        console.warn('[CarFlow Sync] syncTodayTripStatuses after fetch:', e);
-      }
       window.dispatchEvent(new Event('carflow_data_changed'));
     }
 
@@ -536,3 +547,82 @@ export async function pushActivityLogToSupabase(log: ActivityLog & { timestamp: 
   }
 }
 
+// ===== RESOURCE BLOCKS (Phase 2A) =====
+
+export function mapBlockFromDb(db: any): ResourceBlock {
+  return {
+    id: db.id,
+    resourceType: db.resource_type,
+    resourceId: db.resource_id,
+    blockType: db.block_type,
+    startTime: db.start_time,
+    endTime: db.end_time,
+    reason: db.reason || undefined,
+    createdBy: db.created_by || undefined,
+    createdAt: db.created_at || undefined,
+  };
+}
+
+export function mapBlockToDb(b: ResourceBlock): any {
+  return {
+    id: b.id,
+    resource_type: b.resourceType,
+    resource_id: b.resourceId,
+    block_type: b.blockType,
+    start_time: b.startTime,
+    end_time: b.endTime,
+    reason: b.reason || null,
+    created_by: b.createdBy || null,
+  };
+}
+
+export function getResourceBlocks(): ResourceBlock[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    return JSON.parse(localStorage.getItem(BLOCKS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+export function saveResourceBlock(block: ResourceBlock): void {
+  if (typeof window === 'undefined') return;
+  const blocks = getResourceBlocks();
+  const index = blocks.findIndex(b => b.id === block.id);
+  if (index >= 0) {
+    blocks[index] = block;
+  } else {
+    blocks.push(block);
+  }
+  safeLocalStorageSet(BLOCKS_KEY, JSON.stringify(blocks));
+  pushBlockToSupabase(block);
+  window.dispatchEvent(new Event('carflow_data_changed'));
+}
+
+export function deleteResourceBlock(id: string): void {
+  if (typeof window === 'undefined') return;
+  const blocks = getResourceBlocks().filter(b => b.id !== id);
+  safeLocalStorageSet(BLOCKS_KEY, JSON.stringify(blocks));
+  deleteBlockFromSupabase(id);
+  window.dispatchEvent(new Event('carflow_data_changed'));
+}
+
+export async function pushBlockToSupabase(block: ResourceBlock): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) return;
+  try {
+    const { error } = await supabase.from('resource_blocks').upsert(mapBlockToDb(block));
+    if (error) console.error('[CarFlow Push] Block upsert error:', error.message);
+  } catch (err) {
+    console.error('[CarFlow Push] Block exception:', err);
+  }
+}
+
+export async function deleteBlockFromSupabase(id: string): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) return;
+  try {
+    const { error } = await supabase.from('resource_blocks').delete().eq('id', id);
+    if (error) console.error('[CarFlow Delete] Block delete error:', error.message);
+  } catch (err) {
+    console.error('[CarFlow Delete] Block exception:', err);
+  }
+}

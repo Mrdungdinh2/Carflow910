@@ -31,11 +31,6 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
         const success = await fetchAndSyncAllFromSupabase();
         if (success) {
           console.log('[CarFlow] Initial sync from Supabase completed successfully');
-          // Tính toán lại trạng thái xe/tài xế sau khi sync
-          try {
-            const { syncTodayTripStatuses } = await import('@/lib/storage');
-            syncTodayTripStatuses();
-          } catch {}
           // Always dispatch event after first sync to force all pages to re-read data
           window.dispatchEvent(new Event('carflow_data_changed'));
         } else {
@@ -55,6 +50,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => debouncedSync())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicle_requests' }, () => debouncedSync())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'departments' }, () => debouncedSync())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'resource_blocks' }, () => debouncedSync())
       .subscribe((status) => {
         console.log('[CarFlow Realtime] Subscription status:', status);
       });
