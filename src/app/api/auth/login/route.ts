@@ -11,10 +11,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { supabaseAdmin } from '@/lib/supabaseServer';
 
-// Simple in-memory rate limiter (per IP)
+// Simple in-memory rate limiter (per IP+username)
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = 10;
+const WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
@@ -41,14 +41,6 @@ export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
-    // Rate limit check
-    if (!checkRateLimit(ip)) {
-      return NextResponse.json(
-        { error: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 15 phút.' },
-        { status: 429 }
-      );
-    }
-
     const body = await request.json();
     const { username, password } = body;
 
@@ -56,6 +48,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Vui lòng nhập tên đăng nhập và mật khẩu' },
         { status: 400 }
+      );
+    }
+
+    // Rate limit check (per IP + username)
+    const rateLimitKey = `${ip}:${username}`;
+    if (!checkRateLimit(rateLimitKey)) {
+      return NextResponse.json(
+        { error: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 5 phút.' },
+        { status: 429 }
       );
     }
 
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Reset rate limit on successful login
-    resetRateLimit(ip);
+    resetRateLimit(rateLimitKey);
 
     // Return user info WITHOUT password/password_hash
     return NextResponse.json({
