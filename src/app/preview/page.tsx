@@ -344,14 +344,20 @@ function PreviewContent() {
   const handleSubmit = () => {
     if (!user || !request) return;
 
-    if (user.role === 'dept_head' || user.role === 'tcth') {
-      // Nếu là Lãnh đạo phòng / TCTH: Gửi đề xuất + tự duyệt cấp phòng -> Chuyển sang bước gán xe
+    const isDirectToTCTH =
+      user.role === 'tcth' ||
+      isTCTHDepartment(user.department) ||
+      user.role === 'dept_head' ||
+      ['director', 'admin'].includes(user.role);
+
+    if (isDirectToTCTH) {
+      // Nếu là user phòng TCTH hoặc Lãnh đạo các phòng/BGĐ: Gửi đề xuất THẲNG lên Phòng TCTH duyệt & gán xe (trạng thái dept_approved)
       const submitEntry: Omit<ApprovalEntryType, 'id' | 'timestamp'> = {
         action: 'submit',
         by: user.id,
         byName: user.name,
         byRole: user.role,
-        note: 'Tạo đề xuất',
+        note: 'Tạo & gửi đề xuất',
       };
       addApprovalEntry(request.id, submitEntry as ApprovalEntryType);
 
@@ -360,22 +366,22 @@ function PreviewContent() {
         by: user.id,
         byName: user.name,
         byRole: user.role,
-        note: `${ROLE_CONFIG[user.role].label} phê duyệt đề xuất`,
+        note: `${ROLE_CONFIG[user.role]?.label || 'Lãnh đạo'} gửi thẳng Phòng TCTH`,
       };
       addApprovalEntry(request.id, approveEntry as ApprovalEntryType);
 
-      showToast('Đã gửi đề xuất & chuyển sang bước gán xe!', 'success');
+      showToast('Đã gửi đề xuất thẳng cho Phòng TCTH duyệt & gán xe!', 'success');
     } else {
-      // Nhân viên gửi duyệt -> Trưởng phòng duyệt
+      // Nhân viên phòng khác gửi duyệt -> Trưởng phòng của chính phòng đó duyệt (pending)
       const entry: Omit<ApprovalEntryType, 'id' | 'timestamp'> = {
         action: 'submit',
         by: user.id,
         byName: user.name,
         byRole: user.role,
-        note: 'Gửi duyệt',
+        note: 'Gửi Trưởng phòng duyệt',
       };
       addApprovalEntry(request.id, entry as ApprovalEntryType);
-      showToast('Đã gửi đề xuất cho Trưởng phòng duyệt', 'success');
+      showToast('Đã gửi đề xuất cho Trưởng phòng phê duyệt', 'success');
     }
 
     refreshRequest();
