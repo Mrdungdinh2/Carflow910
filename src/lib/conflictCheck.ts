@@ -86,19 +86,11 @@ export function getAvailableVehiclesForTimeRange(
   endTime: string,
   excludeRequestId?: string
 ): Vehicle[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tripDay = new Date(startTime);
-  tripDay.setHours(0, 0, 0, 0);
-  const isFutureTrip = tripDay > today;
-
   return vehicles.filter(v => {
     // Xe bảo trì / thanh lý → luôn loại
     if (v.status === 'maintenance' || v.status === 'retired') return false;
-    // Xe đang in_use → chỉ cho phép gán nếu chuyến là TƯƠNG LAI
-    if (v.status === 'in_use' && !isFutureTrip) return false;
-    // Xe 'reserved' (đang đợi chuyến tương lai) → cho phép gán thêm nếu không trùng lịch
-    // Kiểm tra trùng lịch time-range
+
+    // Kiểm tra trùng lịch thời gian cụ thể với các đề xuất khác
     const { available } = isVehicleAvailable(v.id, startTime, endTime, allRequests, excludeRequestId);
     return available;
   });
@@ -107,9 +99,7 @@ export function getAvailableVehiclesForTimeRange(
 /**
  * Get all available drivers for a time range.
  * - TX day_off/sick_leave: LUÔN bị loại.
- * - TX available: OK nếu không trùng lịch.
- * - TX on_duty: Cho phép gán cho chuyến TƯƠNG LAI nếu không trùng lịch
- *   (khi chuyến hiện tại hoàn thành, TX sẽ tự về available).
+ * - TX available/on_duty/reserved: OK nếu không trùng lịch theo khung giờ.
  */
 export function getAvailableDriversForTimeRange(
   drivers: Driver[],
@@ -118,19 +108,11 @@ export function getAvailableDriversForTimeRange(
   endTime: string,
   excludeRequestId?: string
 ): Driver[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tripDay = new Date(startTime);
-  tripDay.setHours(0, 0, 0, 0);
-  const isFutureTrip = tripDay > today;
-
   return drivers.filter(d => {
     // TX nghỉ phép / nghỉ ốm → luôn loại
     if (d.status === 'day_off' || d.status === 'sick_leave') return false;
-    // TX đang on_duty → chỉ cho phép nếu chuyến là TƯƠNG LAI
-    if (d.status === 'on_duty' && !isFutureTrip) return false;
-    // TX 'reserved' (đang đợi chuyến tương lai) → cho phép gán thêm nếu không trùng lịch
-    // Kiểm tra trùng lịch time-range
+
+    // Kiểm tra trùng lịch thời gian cụ thể với các đề xuất khác
     const { available } = isDriverAvailable(d.id, startTime, endTime, allRequests, excludeRequestId);
     return available;
   });
