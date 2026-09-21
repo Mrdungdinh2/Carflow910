@@ -261,7 +261,13 @@ export function addApprovalEntry(
     if (fullEntry.byRole === 'dept_head') {
       requests[index].status = 'dept_approved';
     } else if (fullEntry.byRole === 'tcth') {
-      requests[index].status = 'tcth_approved';
+      // TCTH duyệt pending của phòng mình → dept_approved (duyệt cấp phòng)
+      // TCTH duyệt dept_approved → tcth_approved (gán xe/TX)
+      if (requests[index].status === 'pending') {
+        requests[index].status = 'dept_approved';
+      } else {
+        requests[index].status = 'tcth_approved';
+      }
     } else if (fullEntry.byRole === 'director') {
       requests[index].status = 'bgd_approved';
     }
@@ -374,7 +380,11 @@ export function getPendingForRole(role: UserRole, userId?: string, department?: 
   const requests = getRequests();
   switch (role) {
     case 'dept_head': return requests.filter(r => r.status === 'pending' && (!department || r.department === department));
-    case 'tcth': return requests.filter(r => r.status === 'dept_approved');
+    case 'tcth': return requests.filter(r =>
+      r.status === 'dept_approved' ||
+      // TCTH cũng duyệt pending của chính phòng TCTH (vì phòng TCTH không có dept_head riêng)
+      (r.status === 'pending' && department && r.department === department)
+    );
     case 'director':
     case 'admin': return requests.filter(r => ['pending', 'dept_approved'].includes(r.status));
     case 'driver': return requests.filter(r =>
