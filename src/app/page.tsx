@@ -5,13 +5,14 @@ import Link from 'next/link';
 import {
   Car, Sparkles, ChevronRight, Calendar, LogOut, CheckSquare, PlusCircle,
   Clock, Activity, Truck, Settings, ShieldCheck, BarChart3, FileText,
-  Eye, EyeOff, ArrowRight, MapPin, Compass, X, Info, Trash2, Pencil
+  Eye, EyeOff, ArrowRight, MapPin, Compass, X, Info, Trash2, Pencil, Download
 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
 import { getRequests, getPendingForRole, deleteRequest } from '@/lib/storage';
+import { exportRequestsToExcel } from '@/lib/exportExcel';
 import { useAuth } from '@/lib/AuthContext';
 import { ROLE_CONFIG } from '@/lib/constants';
 import type { VehicleRequest, DashboardStats as DashboardStatsType } from '@/lib/types';
@@ -321,6 +322,24 @@ export default function DashboardPage() {
             </div>
             <span className="text-[11px] font-medium text-slate-200 leading-tight">Mẫu 02/GĐNSDX</span>
           </button>
+
+          {/* Item 10: Xuất báo cáo Excel — chỉ hiện cho admin, tcth, dept_head */}
+          {user && ['admin', 'tcth', 'dept_head'].includes(user.role) && (
+            <button
+              onClick={() => {
+                const data = user.role === 'dept_head'
+                  ? allRequests.filter(r => r.department === user.department)
+                  : allRequests;
+                exportRequestsToExcel(data);
+              }}
+              className="flex flex-col items-center text-center group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-green-500/15 border border-green-500/30 flex items-center justify-center text-green-400 group-hover:scale-110 transition-transform mb-2">
+                <Download className="w-6 h-6" />
+              </div>
+              <span className="text-[11px] font-medium text-slate-200 leading-tight">Xuất Excel</span>
+            </button>
+          )}
 
         </div>
       </div>

@@ -28,6 +28,17 @@ const getNowLocalIso = (): string => {
   return `${year}-${month}-${day}T${hours}:${mins}`;
 };
 
+// Cho phép đặt xe lùi lại 3 ngày
+const get3DaysAgoLocalIso = (): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - 3);
+  d.setHours(0, 0, 0, 0);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}T00:00`;
+};
+
 const getRoundedCurrentTime = () => {
   const now = new Date();
   const minutes = now.getMinutes();
@@ -119,18 +130,20 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
 
   const fleetStats = useMemo(() => getFleetStats(), []);
 
-  // Validation: Thời gian bắt đầu không được chọn ở quá khứ & tối đa 30 ngày tới
+  // Validation: Thời gian bắt đầu cho phép lùi lại tối đa 3 ngày & tối đa 30 ngày tới
   const validateDateRange = (start: string) => {
     if (!start) return true;
     const startDate = new Date(start);
     if (isNaN(startDate.getTime())) return true;
     
     const now = new Date();
-    // 15 phút buffer thời gian làm thao tác form
-    const minAllowedThreshold = new Date(now.getTime() - 15 * 60 * 1000);
+    // Cho phép lùi lại 3 ngày (00:00 của ngày -3)
+    const minAllowedDate = new Date(now);
+    minAllowedDate.setDate(minAllowedDate.getDate() - 3);
+    minAllowedDate.setHours(0, 0, 0, 0);
     
-    if (startDate < minAllowedThreshold) {
-      setDateError('Thời gian bắt đầu không thể chọn ở quá khứ (phải từ thời điểm hiện tại trở đi)');
+    if (startDate < minAllowedDate) {
+      setDateError('Thời gian bắt đầu chỉ được lùi lại tối đa 3 ngày so với hôm nay');
       return false;
     }
     
@@ -326,7 +339,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
               label="Thời gian bắt đầu"
               value={startDateTime}
               onChange={handleStartChange}
-              min={getNowLocalIso()}
+              min={get3DaysAgoLocalIso()}
               error={dateError}
             />
             <DateTimePicker

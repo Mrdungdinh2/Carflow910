@@ -87,9 +87,12 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
       showToast('Vui lòng nhập địa điểm / nơi đến', 'error');
       return;
     }
-    const minThreshold = Date.now() - 15 * 60 * 1000;
-    if (startDateTime && new Date(startDateTime).getTime() < minThreshold) {
-      showToast('Thời gian bắt đầu không thể chọn ở quá khứ (phải từ thời điểm hiện tại trở đi)', 'error');
+    // Cho phép lùi lại tối đa 3 ngày
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    threeDaysAgo.setHours(0, 0, 0, 0);
+    if (startDateTime && new Date(startDateTime).getTime() < threeDaysAgo.getTime()) {
+      showToast('Thời gian bắt đầu chỉ được lùi lại tối đa 3 ngày so với hôm nay', 'error');
       return;
     }
     if (startDateTime && endDateTime && new Date(endDateTime) <= new Date(startDateTime)) {
@@ -222,9 +225,11 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
                 if (e.target.value && endDateTime) refreshAvailableResources(e.target.value, endDateTime);
               }}
                 min={(() => {
-                  const now = new Date();
+                  const d = new Date();
+                  d.setDate(d.getDate() - 3);
+                  d.setHours(0, 0, 0, 0);
                   const pad = (n: number) => String(n).padStart(2, '0');
-                  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00`;
                 })()}
                 className="w-full px-2.5 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500/50"
               />
