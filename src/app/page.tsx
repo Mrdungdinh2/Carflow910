@@ -31,7 +31,6 @@ export default function DashboardPage() {
   // Dashboard Modals
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [showKmModal, setShowKmModal] = useState(false);
-  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   useSupabaseSync(() => {
     setAllRequests(getRequests());
@@ -204,9 +203,6 @@ export default function DashboardPage() {
               <Link href="/new" className="text-[10px] bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 px-2.5 py-1 rounded-full hover:bg-cyan-500/20">
                 → Đăng ký nhanh
               </Link>
-              <button onClick={() => setShowTemplateModal(true)} className="text-[10px] bg-white/5 text-slate-300 border border-white/10 px-2.5 py-1 rounded-full hover:bg-white/10">
-                → Xuất Docx Mẫu 02
-              </button>
             </div>
           </div>
           <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
@@ -258,7 +254,17 @@ export default function DashboardPage() {
             </Link>
           )}
 
-          {/* Item 3: Đội xe công tác */}
+          {/* Item 3: Quản lý đề xuất (Hiển thị cho TCTH & Admin) */}
+          {user && ['tcth', 'admin'].includes(user.role) && (
+            <Link href="/admin/requests" className="flex flex-col items-center text-center group">
+              <div className="w-12 h-12 rounded-2xl bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-400 group-hover:scale-110 transition-transform mb-2">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <span className="text-[11px] font-medium text-slate-200 leading-tight">Quản lý đề xuất</span>
+            </Link>
+          )}
+
+          {/* Item 4: Đội xe công tác */}
           <Link href="/fleet" className="flex flex-col items-center text-center group">
             <div className="w-12 h-12 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform mb-2">
               <Truck className="w-6 h-6" />
@@ -266,7 +272,7 @@ export default function DashboardPage() {
             <span className="text-[11px] font-medium text-slate-200 leading-tight">Tình hình Đội xe</span>
           </Link>
 
-          {/* Item 4: Giám sát GPS */}
+          {/* Item 5: Giám sát GPS */}
           <Link href="/monitor" className="flex flex-col items-center text-center group">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform mb-2">
               <Activity className="w-6 h-6" />
@@ -274,7 +280,7 @@ export default function DashboardPage() {
             <span className="text-[11px] font-medium text-slate-200 leading-tight">Giám sát GPS</span>
           </Link>
 
-          {/* Item 5: Lịch sử điều xe */}
+          {/* Item 6: Lịch sử điều xe */}
           <Link href="/history" className="flex flex-col items-center text-center group">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform mb-2">
               <Clock className="w-6 h-6" />
@@ -282,24 +288,27 @@ export default function DashboardPage() {
             <span className="text-[11px] font-medium text-slate-200 leading-tight">Lịch sử điều xe</span>
           </Link>
 
-          {/* Item 6: Admin / Driver Mission — chỉ hiện cho driver, admin, tcth */}
-          {user?.role === 'admin' ? (
+          {/* Item 7: Admin — Chỉ hiện cho Admin */}
+          {user?.role === 'admin' && (
             <Link href="/admin" className="flex flex-col items-center text-center group">
               <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-110 transition-transform mb-2">
                 <Settings className="w-6 h-6" />
               </div>
               <span className="text-[11px] font-medium text-slate-200 leading-tight">Quản trị Admin</span>
             </Link>
-          ) : ['driver', 'tcth'].includes(user?.role || '') ? (
+          )}
+
+          {/* Item 8: Nhiệm vụ tài xế — CHỈ HIỂN THỊ CHO TÀI XẾ */}
+          {user?.role === 'driver' && (
             <Link href="/driver" className="flex flex-col items-center text-center group">
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform mb-2">
                 <Compass className="w-6 h-6" />
               </div>
               <span className="text-[11px] font-medium text-slate-200 leading-tight">Nhiệm vụ tài xế</span>
             </Link>
-          ) : null}
+          )}
 
-          {/* Item 7: Quy định an toàn (Interactive Modal) */}
+          {/* Item 9: Quy định an toàn (Interactive Modal) */}
           <button onClick={() => setShowSafetyModal(true)} className="flex flex-col items-center text-center group cursor-pointer">
             <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform mb-2">
               <ShieldCheck className="w-6 h-6" />
@@ -307,21 +316,15 @@ export default function DashboardPage() {
             <span className="text-[11px] font-medium text-slate-200 leading-tight">Quy định an toàn</span>
           </button>
 
-          {/* Item 8: Thống kê km (Interactive Modal) */}
-          <button onClick={() => setShowKmModal(true)} className="flex flex-col items-center text-center group cursor-pointer">
-            <div className="w-12 h-12 rounded-2xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform mb-2">
-              <BarChart3 className="w-6 h-6" />
-            </div>
-            <span className="text-[11px] font-medium text-slate-200 leading-tight">Thống kê km</span>
-          </button>
-
-          {/* Item 9: Mẫu 02/GĐNSDX (Interactive Modal) */}
-          <button onClick={() => setShowTemplateModal(true)} className="flex flex-col items-center text-center group cursor-pointer">
-            <div className="w-12 h-12 rounded-2xl bg-pink-500/15 border border-pink-500/30 flex items-center justify-center text-pink-400 group-hover:scale-110 transition-transform mb-2">
-              <FileText className="w-6 h-6" />
-            </div>
-            <span className="text-[11px] font-medium text-slate-200 leading-tight">Mẫu 02/GĐNSDX</span>
-          </button>
+          {/* Item 10: Thống kê km — CHỈ HIỂN THỊ CHO ADMIN */}
+          {user?.role === 'admin' && (
+            <button onClick={() => setShowKmModal(true)} className="flex flex-col items-center text-center group cursor-pointer">
+              <div className="w-12 h-12 rounded-2xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform mb-2">
+                <BarChart3 className="w-6 h-6" />
+              </div>
+              <span className="text-[11px] font-medium text-slate-200 leading-tight">Thống kê km</span>
+            </button>
+          )}
 
           {/* Item 10: Xuất báo cáo Excel — chỉ hiện cho admin, tcth, dept_head */}
           {user && ['admin', 'tcth', 'dept_head'].includes(user.role) && (
@@ -506,37 +509,6 @@ export default function DashboardPage() {
             <button onClick={() => setShowKmModal(false)} className="btn-primary w-full mt-5 text-xs py-2.5">
               Đóng
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Item 9: Template 02 Info Modal */}
-      {showTemplateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#090d16]/90 backdrop-blur-xl">
-          <div className="relative w-full max-w-md bg-[#121929] border border-white/10 rounded-3xl p-6 shadow-2xl animate-scale-in">
-            <button onClick={() => setShowTemplateModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-pink-500/20 flex items-center justify-center text-pink-400">
-                <FileText className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Mẫu 02/GĐNSDX VietinBank</h3>
-                <p className="text-xs text-slate-400">Giấy đề nghị sử dụng xe ô tô công tác</p>
-              </div>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Biểu mẫu chuẩn hóa dành riêng cho VietinBank Chi nhánh Nam Sài Gòn. Hệ thống tự động điền các thông tin đề nghị, phòng ban, lộ trình và danh sách người đi kèm, xuất file **.docx** và **.xlsx** chuẩn 100%.
-            </p>
-            <div className="flex gap-2">
-              <button onClick={() => setShowTemplateModal(false)} className="btn-secondary flex-1 text-xs py-2.5">
-                Đóng
-              </button>
-              <Link href="/new" onClick={() => setShowTemplateModal(false)} className="btn-primary flex-1 text-xs py-2.5 text-center">
-                Tạo đề xuất mới
-              </Link>
-            </div>
           </div>
         </div>
       )}
