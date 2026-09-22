@@ -43,25 +43,36 @@ export function syncTodayTripStatuses(): number {
  * Tính trạng thái HIỆN TẠI (computed) của vehicle dựa trên trips đang diễn ra.
  * KHÔNG ghi đè vehicle.status — chỉ trả về giá trị tính toán.
  */
-export function getVehicleCurrentStatus(vehicleId: string): VehicleStatus {
+export function getVehicleCurrentStatus(vehicleId: string, customRequests?: VehicleRequest[]): VehicleStatus {
   const vehicles = getVehicles();
   const vehicle = vehicles.find(v => v.id === vehicleId);
   if (!vehicle) return 'available';
   
-  // Master status ưu tiên (admin set thủ công)
+  // 1. Master status ưu tiên (admin set thủ công)
   if (vehicle.status === 'maintenance' || vehicle.status === 'retired') {
     return vehicle.status;
   }
   
+  // 2. Resource Block (bảo trì / tạm khóa đặt trước theo khoảng thời gian)
   const nowIso = new Date().toISOString();
-  const requests = getRequests();
+  try {
+    const { getResourceBlocks } = require('./supabaseStorage');
+    const blocks = getResourceBlocks();
+    const activeBlock = blocks.find((b: any) =>
+      b.resourceType === 'vehicle' &&
+      b.resourceId === vehicleId &&
+      b.startTime <= nowIso &&
+      b.endTime >= nowIso
+    );
+    if (activeBlock) return 'maintenance';
+  } catch {}
   
-  // Có chuyến đang diễn ra NGAY BÂY GIỜ?
+  const requests = customRequests || getRequests();
+  
+  // 3. Chuyến xe có trạng thái driver_accepted là chuyến ĐANG THỰC HIỆN (Đang công tác)
   const activeReq = requests.find(r =>
     r.assignedVehicleId === vehicleId &&
-    ['tcth_approved', 'driver_accepted'].includes(r.status) &&
-    r.startDateTime <= nowIso &&
-    r.endDateTime >= nowIso
+    r.status === 'driver_accepted'
   );
   
   return activeReq ? 'in_use' : 'available';
@@ -70,24 +81,41 @@ export function getVehicleCurrentStatus(vehicleId: string): VehicleStatus {
 /**
  * Tính trạng thái HIỆN TẠI (computed) của driver dựa trên trips đang diễn ra.
  */
-export function getDriverCurrentStatus(driverId: string): DriverStatus {
+export function getDriverCurrentStatus(driverId: string, customRequests?: VehicleRequest[]): DriverStatus {
   const drivers = getDrivers();
   const driver = drivers.find(d => d.id === driverId);
   if (!driver) return 'available';
   
+  // 1. Master status ưu tiên (nghỉ phép / nghỉ ốm do admin set)
   if (driver.status === 'day_off' || driver.status === 'sick_leave') {
     return driver.status;
   }
   
+  // 2. Resource Block (nghỉ phép theo khoảng thời gian)
   const nowIso = new Date().toISOString();
-  const requests = getRequests();
+  try {
+    const { getResourceBlocks } = require('./supabaseStorage');
+    const blocks = getResourceBlocks();
+    const activeBlock = blocks.find((b: any) =>
+      b.resourceType === 'driver' &&
+      b.resourceId === driverId &&
+      b.startTime <= nowIso &&
+      b.endTime >= nowIso
+    );
+    if (activeBlock) return 'day_off';
+  } catch {}
   
-  const activeReq = requests.find(r =>
-    r.assignedDriverId === driverId &&
-    ['tcth_approved', 'driver_accepted'].includes(r.status) &&
-    r.startDateTime <= nowIso &&
-    r.endDateTime >= nowIso
-  );
+  const driverName = driver.name ? driver.name.toLowerCase() : '';
+  const targetId = driverId.toLowerCase();
+  const requests = customRequests || getRequests();
+  
+  // 3. Chuyến xe có trạng thái driver_accepted là chuyến ĐANG THỰC HIỆN (Đang chạy)
+  const activeReq = requests.find(r => {
+    if (r.status !== 'driver_accepted') return false;
+    if (!r.assignedDriverId) return false;
+    const assigned = r.assignedDriverId.toLowerCase();
+    return assigned === targetId || (driverName && assigned === driverName);
+  });
   
   return activeReq ? 'on_duty' : 'available';
 }
@@ -105,12 +133,22 @@ export function getResourceSchedule(
   const end = toDate || new Date(Date.now() + 7 * 86400000).toISOString();
   const requests = getRequests();
   
-  return requests.filter(r =>
-    (resourceType === 'vehicle' ? r.assignedVehicleId : r.assignedDriverId) === resourceId &&
-    ['tcth_approved', 'driver_accepted'].includes(r.status) &&
-    r.endDateTime >= now &&
-    r.startDateTime <= end
-  ).sort((a, b) => a.startDateTime.localeCompare(b.startDateTime));
+  const driverObj = resourceType === 'driver' ? getDrivers().find(d => d.id === resourceId) : null;
+  const driverName = driverObj?.name?.toLowerCase() || '';
+  const targetId = resourceId.toLowerCase();
+  
+  return requests.filter(r => {
+    const isTarget = resourceType === 'vehicle'
+      ? r.assignedVehicleId === resourceId
+      : (r.assignedDriverId?.toLowerCase() === targetId || (driverName && r.assignedDriverId?.toLowerCase() === driverName));
+    
+    if (!isTarget) return false;
+    // Lịch tiếp theo CHỈ bao gồm các chuyến tcth_approved (chưa nhận/chưa bắt đầu)
+    // TUYỆT ĐỐI KHÔNG bao gồm chuyến driver_accepted (đã là chuyến đang thực hiện)
+    if (r.status !== 'tcth_approved') return false;
+    if (!r.endDateTime) return false;
+    return r.endDateTime >= now && r.startDateTime <= end;
+  }).sort((a, b) => a.startDateTime.localeCompare(b.startDateTime));
 }
 
 function generateId(): string {

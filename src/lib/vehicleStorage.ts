@@ -236,7 +236,7 @@ export function getDriverStats(driverId: string, requests?: VehicleRequest[]): D
   });
 
   const completedTrips = assigned.filter(r => r.status === 'completed').length;
-  const activeTrips = assigned.filter(r => ['tcth_approved', 'driver_accepted'].includes(r.status)).length;
+  const activeTrips = assigned.filter(r => r.status === 'driver_accepted').length;
   const totalTrips = assigned.length;
 
   return {
@@ -268,13 +268,22 @@ export function getFleetStats(): FleetStats {
     requests = JSON.parse(localStorage.getItem('carflow_requests') || '[]');
   } catch {}
   
-  const nowIso = new Date().toISOString();
-  
-  // Compute: which vehicles/drivers are CURRENTLY active (trip happening right now)
+  // Compute: which vehicles/drivers are CURRENTLY active (driver_accepted trip)
   const inUseVehicleIds = new Set<string>();
   const onDutyDriverIds = new Set<string>();
   
-  // Count scheduled trips for today and tomorrow
+  for (const r of requests) {
+    if (r.status === 'driver_accepted') {
+      if (r.assignedVehicleId) inUseVehicleIds.add(r.assignedVehicleId);
+      if (r.assignedDriverId) {
+        onDutyDriverIds.add(r.assignedDriverId);
+        const foundDriver = drivers.find(d => d.name && d.name.toLowerCase() === r.assignedDriverId.toLowerCase());
+        if (foundDriver) onDutyDriverIds.add(foundDriver.id);
+      }
+    }
+  }
+  
+  // Count scheduled trips for today and tomorrow (ONLY tcth_approved trips, NOT active ones)
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
   const tomorrowStart = new Date(todayStart); tomorrowStart.setDate(tomorrowStart.getDate() + 1);
@@ -284,18 +293,11 @@ export function getFleetStats(): FleetStats {
   let scheduledTomorrow = 0;
   
   for (const r of requests) {
-    if (!['tcth_approved', 'driver_accepted'].includes(r.status)) continue;
+    if (r.status !== 'tcth_approved') continue;
     const start = r.startDateTime || '';
-    const end = r.endDateTime || '';
-    
-    // Currently active?
-    if (start <= nowIso && end >= nowIso) {
-      if (r.assignedVehicleId) inUseVehicleIds.add(r.assignedVehicleId);
-      if (r.assignedDriverId) onDutyDriverIds.add(r.assignedDriverId);
-    }
     
     // Scheduled today (future, not yet started)?
-    if (start > nowIso && start <= todayEnd.toISOString() && r.assignedVehicleId) {
+    if (start >= todayStart.toISOString() && start <= todayEnd.toISOString() && r.assignedVehicleId) {
       scheduledToday++;
     }
     

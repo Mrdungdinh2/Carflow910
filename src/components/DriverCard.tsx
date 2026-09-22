@@ -2,14 +2,16 @@
 
 import React from 'react';
 import { Phone, CreditCard, User, Pencil, History, Award } from 'lucide-react';
-import type { Driver, DriverStats } from '@/lib/types';
+import type { Driver, DriverStats, VehicleRequest } from '@/lib/types';
 import { DRIVER_STATUS_CONFIG } from '@/lib/constants';
 import { getDriverStats } from '@/lib/vehicleStorage';
+import { getDriverCurrentStatus } from '@/lib/storage';
 
 interface DriverCardProps {
   driver: Driver;
   isAssigned?: boolean;
   stats?: DriverStats;
+  requests?: VehicleRequest[];
   onSelect?: (driver: Driver) => void;
   onEditPhone?: (driver: Driver) => void;
   onViewHistory?: (driver: Driver) => void;
@@ -19,11 +21,13 @@ export function DriverCard({
   driver,
   isAssigned,
   stats: propStats,
+  requests,
   onSelect,
   onEditPhone,
   onViewHistory,
 }: DriverCardProps) {
-  const statusCfg = DRIVER_STATUS_CONFIG[driver.status] || { label: 'Sẵn sàng', color: 'text-emerald-400' };
+  const runtimeStatus = getDriverCurrentStatus(driver.id, requests);
+  const statusCfg = DRIVER_STATUS_CONFIG[runtimeStatus] || DRIVER_STATUS_CONFIG[driver.status] || { label: 'Sẵn sàng', color: 'text-emerald-400' };
 
   // If stats prop not provided, fetch live stats
   const driverStats = propStats || getDriverStats(driver.id);

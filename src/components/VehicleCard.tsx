@@ -2,17 +2,20 @@
 
 import React from 'react';
 import { Car, Users, Gauge } from 'lucide-react';
-import type { Vehicle } from '@/lib/types';
+import type { Vehicle, VehicleRequest } from '@/lib/types';
 import { VEHICLE_STATUS_CONFIG } from '@/lib/constants';
+import { getVehicleCurrentStatus } from '@/lib/storage';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
   isAssigned?: boolean;
+  requests?: VehicleRequest[];
   onSelect?: (vehicle: Vehicle) => void;
 }
 
-export function VehicleCard({ vehicle, isAssigned, onSelect }: VehicleCardProps) {
-  const statusCfg = VEHICLE_STATUS_CONFIG[vehicle.status];
+export function VehicleCard({ vehicle, isAssigned, requests, onSelect }: VehicleCardProps) {
+  const runtimeStatus = getVehicleCurrentStatus(vehicle.id, requests);
+  const statusCfg = VEHICLE_STATUS_CONFIG[runtimeStatus] || VEHICLE_STATUS_CONFIG[vehicle.status];
 
   return (
     <div

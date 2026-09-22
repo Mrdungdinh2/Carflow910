@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { Car, Users, ArrowLeft, Send, PlusCircle, CalendarClock } from 'lucide-react';
 import { getVehicles, getDrivers, getFleetStats } from '@/lib/vehicleStorage';
 import { getRequests, getResourceSchedule } from '@/lib/storage';
-import { Vehicle, Driver, FleetStats } from '@/lib/types';
+import { fetchAndSyncAllFromSupabase } from '@/lib/supabaseStorage';
+import { Vehicle, Driver, FleetStats, VehicleRequest } from '@/lib/types';
 import { VehicleCard } from '@/components/VehicleCard';
 import { DriverCard } from '@/components/DriverCard';
 import { DirectTaskModal } from '@/components/DirectTaskModal';
@@ -19,6 +20,7 @@ export default function FleetPage() {
   const router = useRouter();
   
   const [activeTab, setActiveTab] = useState<'xe' | 'taixe'>('xe');
+  const [requests, setRequests] = useState<VehicleRequest[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [stats, setStats] = useState<FleetStats | null>(null);
@@ -31,12 +33,13 @@ export default function FleetPage() {
   const canManage = user && ['tcth', 'admin'].includes(user.role);
 
   const refreshData = () => {
+    setRequests(getRequests());
     setVehicles(getVehicles());
     setDrivers(getDrivers());
     setStats(getFleetStats());
   };
 
-  // Phase 2C: Schedule l\u1ea5y tr\u1ef1c ti\u1ebfp trong m\u1ed7i card qua getResourceSchedule()
+  // Phase 2C: Schedule lấy trực tiếp trong mỗi card qua getResourceSchedule()
 
   const handleVehicleStatusChange = (vehicleId: string, newStatus: any) => {
     if (!canManage) return;
@@ -87,8 +90,10 @@ export default function FleetPage() {
       router.push('/login');
       return;
     }
-    // Phase 2B: Status là computed — không cần syncTodayTripStatuses
-    refreshData();
+    // Fetch fresh data from Supabase on page load
+    fetchAndSyncAllFromSupabase().then(() => {
+      refreshData();
+    });
   }, [user, router]);
 
   useSupabaseSync(refreshData);
@@ -187,7 +192,7 @@ export default function FleetPage() {
               const nextTrip = schedule[0];
               return (
               <div key={v.id} style={{ animationDelay: `${i * 100}ms` }} className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
-                <VehicleCard vehicle={v} />
+                <VehicleCard vehicle={v} requests={requests} />
                 {/* Mini Schedule: lịch tiếp theo */}
                 {nextTrip && (
                   <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
@@ -254,6 +259,7 @@ export default function FleetPage() {
               <div key={d.id} style={{ animationDelay: `${i * 100}ms` }} className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both">
                 <DriverCard
                   driver={d}
+                  requests={requests}
                   onEditPhone={canManage ? (driverToEdit) => setEditingDriver(driverToEdit) : undefined}
                   onViewHistory={(driverToView) => setHistoryDriver(driverToView)}
                 />
