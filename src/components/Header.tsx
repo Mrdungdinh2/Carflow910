@@ -33,7 +33,7 @@ export function Header() {
                 VIETINBANK
               </span>
               <span className="text-[7.5px] font-extrabold uppercase tracking-[0.2em] text-[#f4c3af] mt-0.5">
-                P R E M I U M
+                N A M  S À I  G Ò N
               </span>
             </div>
           </Link>
@@ -41,7 +41,7 @@ export function Header() {
           {/* Right Header Icons */}
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
             {/* Crown Premium Badge */}
-            <div className="w-8 h-8 rounded-full bg-[#f4c3af]/10 border border-[#f4c3af]/30 flex items-center justify-center text-[#f4c3af]" title="VietinBank Premium User">
+            <div className="w-8 h-8 rounded-full bg-[#f4c3af]/10 border border-[#f4c3af]/30 flex items-center justify-center text-[#f4c3af]" title="VietinBank Nam Sài Gòn">
               <Crown className="w-4 h-4" />
             </div>
 

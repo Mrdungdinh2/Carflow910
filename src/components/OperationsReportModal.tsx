@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Car, Users, Activity, BarChart3, Calendar, MapPin, Clock, TrendingUp, Fuel, CheckCircle2 } from 'lucide-react';
+import { X, Car, Users, Activity, Calendar, Clock } from 'lucide-react';
 import { getRequests } from '@/lib/storage';
 import { getVehicles, getDrivers, getFleetStats } from '@/lib/vehicleStorage';
 import type { VehicleRequest, Vehicle, Driver, FleetStats } from '@/lib/types';
@@ -73,23 +73,16 @@ export function OperationsReportModal({ isOpen, onClose }: Props) {
     )
     .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
 
-  // Completed Stats
-  const completedRequests = requests.filter(r => r.status === 'completed');
-  const totalCompletedTrips = completedRequests.length;
-  const totalKm = completedRequests.reduce((sum, r) => sum + (r.tripOdoEnd || 0) - (r.tripOdoStart || 0), 0);
-  const avgKm = totalCompletedTrips > 0 ? Math.round(totalKm / totalCompletedTrips) : 0;
-  const completionRate = requests.length > 0 ? Math.round((totalCompletedTrips / requests.length) * 100) : 0;
-
-  // Vehicle Usage
-  const vehicleUsage = vehicles.map(v => {
-    const vRequests = completedRequests.filter(r => r.assignedVehicleId === v.id);
-    const vKm = vRequests.reduce((sum, r) => sum + ((r.tripOdoEnd || 0) - (r.tripOdoStart || 0)), 0);
-    return {
-      ...v,
-      totalTrips: vRequests.length,
-      totalKm: vKm
-    };
-  }).sort((a, b) => b.totalKm - a.totalKm);
+  // Split: today vs future
+  const todayEnd = new Date(todayStart);
+  todayEnd.setDate(todayEnd.getDate() + 1);
+  const todayRequests = upcomingRequests.filter(r => {
+    const t = new Date(r.startDateTime).getTime();
+    return t >= todayStart.getTime() && t < todayEnd.getTime();
+  });
+  const futureRequests = upcomingRequests.filter(r => {
+    return new Date(r.startDateTime).getTime() >= todayEnd.getTime();
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#090d16]/90 backdrop-blur-xl">
@@ -177,56 +170,19 @@ export function OperationsReportModal({ isOpen, onClose }: Props) {
             </div>
           </div>
 
-          {/* Section 2: KM Statistics */}
-          <div className="space-y-4">
-            <h3 className="text-base font-semibold text-white flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-cyan-400" />
-              Hiệu suất hoạt động
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <BarChart3 className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-400">Tổng chuyến hoàn thành</span>
-                </div>
-                <span className="text-2xl font-bold text-white">{totalCompletedTrips}</span>
-              </div>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-400">Tổng quãng đường (km)</span>
-                </div>
-                <span className="text-2xl font-bold text-white">{totalKm.toLocaleString()}</span>
-              </div>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-400">Trung bình (km/chuyến)</span>
-                </div>
-                <span className="text-2xl font-bold text-white">{avgKm.toLocaleString()}</span>
-              </div>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs text-gray-400">Tỷ lệ hoàn thành</span>
-                </div>
-                <span className="text-2xl font-bold text-emerald-400">{completionRate}%</span>
-              </div>
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Section 3: Schedule Table */}
+            {/* Left: Lịch trình hiện tại (Hôm nay) */}
             <div className="space-y-4">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-cyan-400" />
-                Lịch trình sắp tới
+                <Clock className="w-5 h-5 text-emerald-400" />
+                Lịch trình hiện tại
+                <span className="text-xs text-gray-500 font-normal">({todayRequests.length} chuyến)</span>
               </h3>
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[45vh] overflow-y-auto custom-scrollbar">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-white/[0.02] border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider">
+                      <tr className="bg-white/[0.02] border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider sticky top-0 backdrop-blur-md">
                         <th className="px-4 py-3 font-medium">Thời gian</th>
                         <th className="px-4 py-3 font-medium">Nơi đến</th>
                         <th className="px-4 py-3 font-medium">Xe & Tài xế</th>
@@ -234,27 +190,22 @@ export function OperationsReportModal({ isOpen, onClose }: Props) {
                       </tr>
                     </thead>
                     <tbody className="text-sm divide-y divide-white/5">
-                      {upcomingRequests.length === 0 ? (
+                      {todayRequests.length === 0 ? (
                          <tr>
                            <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                             Không có lịch trình sắp tới
+                             Hôm nay không có lịch trình
                            </td>
                          </tr>
                       ) : (
-                        upcomingRequests.map(req => {
+                        todayRequests.map(req => {
                           const reqDate = new Date(req.startDateTime);
-                          let dateLabel = formatDateShort(reqDate);
-                          if (isSameDay(reqDate, now)) dateLabel = 'Hôm nay';
-                          else if (isNextDay(reqDate, now)) dateLabel = 'Ngày mai';
-
                           const vehicle = vehicles.find(v => v.id === req.assignedVehicleId);
                           const driver = drivers.find(d => d.id === req.assignedDriverId);
-
                           return (
                             <tr key={req.id} className="hover:bg-white/[0.02] transition-colors">
                               <td className="px-4 py-3">
                                 <div className="text-white font-medium">{formatTime(reqDate)}</div>
-                                <div className="text-xs text-gray-500">{dateLabel}</div>
+                                <div className="text-xs text-emerald-400">Hôm nay</div>
                               </td>
                               <td className="px-4 py-3">
                                 <div className="text-gray-300 max-w-[150px] truncate" title={req.destination}>
@@ -280,48 +231,63 @@ export function OperationsReportModal({ isOpen, onClose }: Props) {
               </div>
             </div>
 
-            {/* Section 4: Vehicle Usage */}
+            {/* Right: Lịch trình tương lai */}
             <div className="space-y-4">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <Fuel className="w-5 h-5 text-cyan-400" />
-                Chi tiết sử dụng xe
+                <Calendar className="w-5 h-5 text-cyan-400" />
+                Lịch trình tương lai
+                <span className="text-xs text-gray-500 font-normal">({futureRequests.length} chuyến)</span>
               </h3>
               <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[45vh] overflow-y-auto custom-scrollbar">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-white/[0.02] border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider">
-                        <th className="px-4 py-3 font-medium">Biển số</th>
-                        <th className="px-4 py-3 font-medium">Dòng xe</th>
-                        <th className="px-4 py-3 font-medium text-right">Số chuyến</th>
-                        <th className="px-4 py-3 font-medium text-right">Tổng KM</th>
+                      <tr className="bg-white/[0.02] border-b border-white/10 text-xs text-gray-400 uppercase tracking-wider sticky top-0 backdrop-blur-md">
+                        <th className="px-4 py-3 font-medium">Thời gian</th>
+                        <th className="px-4 py-3 font-medium">Nơi đến</th>
+                        <th className="px-4 py-3 font-medium">Xe & Tài xế</th>
                         <th className="px-4 py-3 font-medium">Trạng thái</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm divide-y divide-white/5">
-                      {vehicleUsage.map(v => (
-                        <tr key={v.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-4 py-3 font-medium text-white">
-                            {v.plateNumber}
-                          </td>
-                          <td className="px-4 py-3 text-gray-400 text-xs">
-                            {v.model}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-300">
-                            {v.totalTrips}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-300">
-                            {v.totalKm.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-3">
-                            {v.status === 'available' && <span className="text-emerald-400 text-xs">Sẵn sàng</span>}
-                            {v.status === 'in_use' && <span className="text-cyan-400 text-xs">Đang chạy</span>}
-                            {v.status === 'maintenance' && <span className="text-amber-400 text-xs">Bảo trì</span>}
-                            {v.status === 'reserved' && <span className="text-violet-400 text-xs">Đã đặt</span>}
-                            {v.status === 'retired' && <span className="text-red-400 text-xs">Thanh lý</span>}
-                          </td>
-                        </tr>
-                      ))}
+                      {futureRequests.length === 0 ? (
+                         <tr>
+                           <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                             Chưa có lịch trình tương lai
+                           </td>
+                         </tr>
+                      ) : (
+                        futureRequests.map(req => {
+                          const reqDate = new Date(req.startDateTime);
+                          let dateLabel = formatDateShort(reqDate);
+                          if (isNextDay(reqDate, now)) dateLabel = 'Ngày mai';
+
+                          const vehicle = vehicles.find(v => v.id === req.assignedVehicleId);
+                          const driver = drivers.find(d => d.id === req.assignedDriverId);
+                          return (
+                            <tr key={req.id} className="hover:bg-white/[0.02] transition-colors">
+                              <td className="px-4 py-3">
+                                <div className="text-white font-medium">{formatTime(reqDate)}</div>
+                                <div className="text-xs text-gray-500">{dateLabel}</div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="text-gray-300 max-w-[150px] truncate" title={req.destination}>
+                                  {req.destination}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="text-cyan-400 text-xs font-medium">{vehicle?.plateNumber || '-'}</div>
+                                <div className="text-gray-400 text-xs">{driver?.name || '-'}</div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                                  {req.status === 'driver_accepted' ? 'Đã nhận' : 'Đã duyệt'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
