@@ -5,19 +5,21 @@ import Link from 'next/link';
 import {
   Car, Sparkles, ChevronRight, Calendar, LogOut, CheckSquare, PlusCircle,
   Clock, Activity, Truck, Settings, ShieldCheck, BarChart3, FileText,
-  Eye, EyeOff, ArrowRight, MapPin, Compass, X, Info, Trash2, Pencil, Download, Send
+  Eye, EyeOff, ArrowRight, MapPin, Compass, X, Info, Trash2, Pencil, Download, Send,
+  ClipboardList
 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
 import { getRequests, getPendingForRole, deleteRequest } from '@/lib/storage';
-import { exportRequestsToExcel } from '@/lib/exportExcel';
 import { useAuth } from '@/lib/AuthContext';
 import { ROLE_CONFIG } from '@/lib/constants';
 import type { VehicleRequest, DashboardStats as DashboardStatsType } from '@/lib/types';
 import { LogoutModal } from '@/components/LogoutModal';
 import { DirectTaskModal } from '@/components/DirectTaskModal';
+import { OperationsReportModal } from '@/components/OperationsReportModal';
+import { ExportExcelModal } from '@/components/ExportExcelModal';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 
 export default function DashboardPage() {
@@ -33,6 +35,8 @@ export default function DashboardPage() {
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [showKmModal, setShowKmModal] = useState(false);
   const [showDirectTaskModal, setShowDirectTaskModal] = useState(false);
+  const [showOpsReport, setShowOpsReport] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useSupabaseSync(() => {
     setAllRequests(getRequests());
@@ -168,9 +172,20 @@ export default function DashboardPage() {
                   <span>Giao việc trực tiếp</span>
                 </button>
               )}
-              <Link href="/new" className="w-10 h-10 rounded-full bg-slate-950 text-[#f4c3af] flex items-center justify-center shadow-lg hover:scale-105 transition-transform" title="Tạo đề xuất mới">
-                <ArrowRight className="w-5 h-5" />
-              </Link>
+              {user?.role === 'director' ? (
+                <button
+                  onClick={() => setShowOpsReport(true)}
+                  className="px-3 py-2 rounded-2xl bg-slate-950 text-emerald-400 font-bold text-xs shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer"
+                  title="Báo cáo vận hành toàn chi nhánh"
+                >
+                  <ClipboardList className="w-4 h-4 text-emerald-400" />
+                  <span>Báo cáo vận hành</span>
+                </button>
+              ) : (
+                <Link href="/new" className="w-10 h-10 rounded-full bg-slate-950 text-[#f4c3af] flex items-center justify-center shadow-lg hover:scale-105 transition-transform" title="Tạo đề xuất mới">
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -188,10 +203,20 @@ export default function DashboardPage() {
               <span>Giao việc trực tiếp</span>
             </button>
           )}
-          <Link href="/new" className="flex items-center gap-2 bg-white/[0.05] border border-white/10 hover:bg-white/10 px-4 py-2.5 rounded-full text-xs font-semibold text-slate-200 transition-all">
-            <PlusCircle className="w-4 h-4 text-[#f4c3af]" />
-            <span>Tạo đề xuất mới</span>
-          </Link>
+          {user?.role === 'director' ? (
+            <button
+              onClick={() => setShowOpsReport(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 hover:border-emerald-400 px-4 py-2.5 rounded-full text-xs font-bold text-emerald-300 transition-all shadow-lg shadow-emerald-500/10 cursor-pointer"
+            >
+              <ClipboardList className="w-4 h-4 text-emerald-400" />
+              <span>Báo cáo vận hành</span>
+            </button>
+          ) : (
+            <Link href="/new" className="flex items-center gap-2 bg-white/[0.05] border border-white/10 hover:bg-white/10 px-4 py-2.5 rounded-full text-xs font-semibold text-slate-200 transition-all">
+              <PlusCircle className="w-4 h-4 text-[#f4c3af]" />
+              <span>Tạo đề xuất mới</span>
+            </Link>
+          )}
           <Link href="/fleet" className="flex items-center gap-2 bg-white/[0.05] border border-white/10 hover:bg-white/10 px-4 py-2.5 rounded-full text-xs font-semibold text-slate-200 transition-all">
             <Car className="w-4 h-4 text-purple-400" />
             <span>Xem tình hình xe</span>
@@ -260,13 +285,22 @@ export default function DashboardPage() {
             </button>
           )}
 
-          {/* Item 2: Tạo đề xuất */}
-          <Link href="/new" className="flex flex-col items-center text-center group">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#f4c3af]/20 to-[#e0a98b]/20 border border-[#f4c3af]/30 flex items-center justify-center text-[#f4c3af] group-hover:scale-110 transition-transform mb-2">
-              <PlusCircle className="w-6 h-6" />
-            </div>
-            <span className="text-[11px] font-medium text-slate-200 leading-tight">Tạo đề xuất</span>
-          </Link>
+          {/* Item 2: Tạo đề xuất (ẩn cho director — thay bằng Báo cáo vận hành) */}
+          {user?.role === 'director' ? (
+            <button onClick={() => setShowOpsReport(true)} className="flex flex-col items-center text-center group cursor-pointer">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/25 to-teal-600/25 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform mb-2 shadow-lg shadow-emerald-500/15">
+                <ClipboardList className="w-6 h-6" />
+              </div>
+              <span className="text-[11px] font-bold text-emerald-300 leading-tight">Báo cáo vận hành</span>
+            </button>
+          ) : (
+            <Link href="/new" className="flex flex-col items-center text-center group">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#f4c3af]/20 to-[#e0a98b]/20 border border-[#f4c3af]/30 flex items-center justify-center text-[#f4c3af] group-hover:scale-110 transition-transform mb-2">
+                <PlusCircle className="w-6 h-6" />
+              </div>
+              <span className="text-[11px] font-medium text-slate-200 leading-tight">Tạo đề xuất</span>
+            </Link>
+          )}
 
           {/* Item 2: Phê duyệt / Đề xuất của tôi (Role tailored) */}
           {user?.role === 'staff' ? (
@@ -367,12 +401,7 @@ export default function DashboardPage() {
           {/* Item 10: Xuất báo cáo Excel — chỉ hiện cho admin, tcth, dept_head */}
           {user && ['admin', 'tcth', 'dept_head'].includes(user.role) && (
             <button
-              onClick={() => {
-                const data = user.role === 'dept_head'
-                  ? allRequests.filter(r => r.department === user.department)
-                  : allRequests;
-                exportRequestsToExcel(data);
-              }}
+              onClick={() => setShowExportModal(true)}
               className="flex flex-col items-center text-center group cursor-pointer"
             >
               <div className="w-12 h-12 rounded-2xl bg-green-500/15 border border-green-500/30 flex items-center justify-center text-green-400 group-hover:scale-110 transition-transform mb-2">
@@ -553,6 +582,18 @@ export default function DashboardPage() {
         isOpen={showDirectTaskModal}
         onClose={() => setShowDirectTaskModal(false)}
         onSuccess={() => setAllRequests(getRequests())}
+      />
+
+      {/* Operations Report Modal (Director only) */}
+      <OperationsReportModal
+        isOpen={showOpsReport}
+        onClose={() => setShowOpsReport(false)}
+      />
+
+      {/* Export Excel Modal (Admin, TCTH, Dept Head) */}
+      <ExportExcelModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
       />
 
     </div>

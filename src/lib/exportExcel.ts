@@ -1,7 +1,7 @@
 'use client';
 
 import * as XLSX from 'xlsx';
-import type { VehicleRequest } from './types';
+import type { VehicleRequest, Vehicle, Driver } from './types';
 import { STATUS_CONFIG } from './constants';
 
 /**
@@ -10,6 +10,8 @@ import { STATUS_CONFIG } from './constants';
  */
 export function exportRequestsToExcel(
   requests: VehicleRequest[],
+  vehicles?: Vehicle[],
+  drivers?: Driver[],
   options?: {
     filename?: string;
     sheetName?: string;
@@ -36,10 +38,11 @@ export function exportRequestsToExcel(
     'Số xe': r.vehicleCount,
     'Danh sách người đi': r.personnel?.map(p => p.name).filter(Boolean).join(', ') || '',
     'Trạng thái': STATUS_CONFIG[r.status]?.label || r.status,
-    'Xe được gán': r.assignedVehicleId || '',
-    'Tài xế': r.assignedDriverId || '',
+    'Xe được gán': vehicles?.find(v => v.id === r.assignedVehicleId)?.plateNumber || r.assignedVehicleId || '',
+    'Tài xế': drivers?.find(d => d.id === r.assignedDriverId)?.name || r.assignedDriverId || '',
     'ODO bắt đầu': r.tripOdoStart || '',
     'ODO kết thúc': r.tripOdoEnd || '',
+    'Km đã chạy': (r.tripOdoEnd && r.tripOdoStart) ? (r.tripOdoEnd - r.tripOdoStart) : '',
     'Thời gian thực tế bắt đầu': r.actualStartTime ? formatDateTime(r.actualStartTime) : '',
     'Thời gian thực tế kết thúc': r.actualEndTime ? formatDateTime(r.actualEndTime) : '',
   }));
@@ -72,6 +75,7 @@ export function exportRequestsToExcel(
     { wch: 12 },  // Tài xế
     { wch: 12 },  // ODO start
     { wch: 12 },  // ODO end
+    { wch: 12 },  // Km da chay
     { wch: 18 },  // Actual start
     { wch: 18 },  // Actual end
   ];

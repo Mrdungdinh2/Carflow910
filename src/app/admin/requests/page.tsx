@@ -15,7 +15,8 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useToast } from '@/components/Toast';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
-import { getRequests, deleteRequest, getStaleRequests, forceCompleteRequest } from '@/lib/storage';
+import { getRequests, deleteRequest, getStaleRequests, forceCompleteRequest, assignVehicleToRequest } from '@/lib/storage';
+import { getAvailableVehiclesForTimeRange, getAvailableDriversForTimeRange } from '@/lib/conflictCheck';
 import { getDepartments } from '@/lib/departmentStorage';
 import { getVehicles, getDrivers } from '@/lib/vehicleStorage';
 import type { VehicleRequest, RequestStatus, TimeFilterPreset, TimeFilterTarget } from '@/lib/types';
@@ -51,6 +52,11 @@ export default function AdminRequestsPage() {
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [showStaleReview, setShowStaleReview] = useState(false);
   const [forceCompleteTarget, setForceCompleteTarget] = useState<VehicleRequest | null>(null);
+
+  // Reassign state
+  const [reassignTarget, setReassignTarget] = useState<VehicleRequest | null>(null);
+  const [reassignVehicleId, setReassignVehicleId] = useState<string>('');
+  const [reassignDriverId, setReassignDriverId] = useState<string>('');
 
   // Time Filter State
   const [timePreset, setTimePreset] = useState<TimeFilterPreset>('all');
@@ -811,6 +817,8 @@ export default function AdminRequestsPage() {
               <div className="space-y-2">
                 {filteredRequests.map((req) => {
                   const isSelected = selectedIds.has(req.id);
+                  const isFuture = new Date(req.startDateTime).getTime() > Date.now();
+                  const canReassign = isFuture && ['tcth_approved', 'driver_accepted'].includes(req.status) && (req.assignedVehicleId || req.assignedDriverId);
                   return (
                     <GlassCard
                       key={req.id}
@@ -882,6 +890,18 @@ export default function AdminRequestsPage() {
                               <Eye className="w-3 h-3" />
                               Xem chi tiết
                             </Link>
+                            {canReassign ? (
+                              <button
+                                onClick={() => {
+                                  setReassignTarget(req);
+                                  setReassignVehicleId(req.assignedVehicleId || '');
+                                  setReassignDriverId(req.assignedDriverId || '');
+                                }}
+                                className="ml-2 px-2 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 text-[10px] font-semibold border border-cyan-500/20 hover:bg-cyan-500/20 transition-all flex items-center gap-1"
+                              >
+                                🔄 Gán lại xe/TX
+                              </button>
+                            ) : null}
                             <div className="flex-1" />
                             <span className="text-[9px] text-slate-600">
                               {formatDate(req.createdAt)}
@@ -894,6 +914,94 @@ export default function AdminRequestsPage() {
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
+
+                          {reassignTarget?.id === req.id && (
+                            <div className="mt-3 p-3 rounded-xl bg-slate-800/50 border border-cyan-500/30 animate-slide-up">
+                              <p className="text-xs font-semibold text-cyan-300 mb-2">Gán lại Xe & Tài xế</p>
+                              
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="text-[10px] text-slate-400 block mb-1">Chọn Xe</label>
+                                  <select 
+                                    value={reassignVehicleId}
+                                    onChange={e => setReassignVehicleId(e.target.value)}
+                                    className="w-full glass-select text-xs py-1.5 px-2 rounded-lg bg-slate-900 border border-white/10 text-white"
+                                  >
+                                    <option value="">-- Không gán xe --</option>
+                                    {(() => {
+                                      const available = getAvailableVehiclesForTimeRange(vehicles, requests, req.startDateTime, req.endDateTime, req.id);
+                                      const isCurrentInAvailable = req.assignedVehicleId && available.some(v => v.id === req.assignedVehicleId);
+                                      
+                                      return (
+                                        <>
+                                          {req.assignedVehicleId && !isCurrentInAvailable && vehicles.find(v => v.id === req.assignedVehicleId) && (
+                                            <option value={req.assignedVehicleId}>
+                                              {vehicles.find(v => v.id === req.assignedVehicleId)?.plateNumber} (Đang gán)
+                                            </option>
+                                          )}
+                                          {available.map(v => (
+                                            <option key={v.id} value={v.id}>
+                                              {v.plateNumber} ({v.seats} chỗ) - {v.model}
+                                            </option>
+                                          ))}
+                                        </>
+                                      );
+                                    })()}
+                                  </select>
+                                </div>
+                                
+                                <div>
+                                  <label className="text-[10px] text-slate-400 block mb-1">Chọn Tài xế</label>
+                                  <select 
+                                    value={reassignDriverId}
+                                    onChange={e => setReassignDriverId(e.target.value)}
+                                    className="w-full glass-select text-xs py-1.5 px-2 rounded-lg bg-slate-900 border border-white/10 text-white"
+                                  >
+                                    <option value="">-- Không gán tài xế --</option>
+                                    {(() => {
+                                      const available = getAvailableDriversForTimeRange(drivers, requests, req.startDateTime, req.endDateTime, req.id);
+                                      const isCurrentInAvailable = req.assignedDriverId && available.some(d => d.id === req.assignedDriverId);
+                                      
+                                      return (
+                                        <>
+                                          {req.assignedDriverId && !isCurrentInAvailable && drivers.find(d => d.id === req.assignedDriverId) && (
+                                            <option value={req.assignedDriverId}>
+                                              {drivers.find(d => d.id === req.assignedDriverId)?.name} (Đang gán)
+                                            </option>
+                                          )}
+                                          {available.map(d => (
+                                            <option key={d.id} value={d.id}>
+                                              {d.name} ({d.phone})
+                                            </option>
+                                          ))}
+                                        </>
+                                      );
+                                    })()}
+                                  </select>
+                                </div>
+                                
+                                <div className="flex gap-2 pt-2">
+                                  <button
+                                    onClick={() => {
+                                      assignVehicleToRequest(req.id, reassignVehicleId || req.assignedVehicleId || '', reassignDriverId || req.assignedDriverId || '');
+                                      showToast('Đã gán lại xe/tài xế thành công', 'success');
+                                      setReassignTarget(null);
+                                      loadRequests();
+                                    }}
+                                    className="flex-1 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 text-xs font-bold border border-cyan-500/30 hover:bg-cyan-500/30 transition-all"
+                                  >
+                                    ✅ Xác nhận gán lại
+                                  </button>
+                                  <button
+                                    onClick={() => setReassignTarget(null)}
+                                    className="px-3 py-1.5 rounded-lg bg-white/5 text-slate-300 text-xs font-semibold border border-white/10 hover:bg-white/10 transition-all"
+                                  >
+                                    Hủy
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </GlassCard>
