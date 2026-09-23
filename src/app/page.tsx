@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Car, Sparkles, ChevronRight, Calendar, LogOut, CheckSquare, PlusCircle,
   Clock, Activity, Truck, Settings, ShieldCheck, BarChart3, FileText,
-  Eye, EyeOff, ArrowRight, MapPin, Compass, X, Info, Trash2, Pencil, Download
+  Eye, EyeOff, ArrowRight, MapPin, Compass, X, Info, Trash2, Pencil, Download, Send
 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -17,6 +17,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { ROLE_CONFIG } from '@/lib/constants';
 import type { VehicleRequest, DashboardStats as DashboardStatsType } from '@/lib/types';
 import { LogoutModal } from '@/components/LogoutModal';
+import { DirectTaskModal } from '@/components/DirectTaskModal';
 import { useSupabaseSync } from '@/hooks/useSupabaseSync';
 
 export default function DashboardPage() {
@@ -31,6 +32,7 @@ export default function DashboardPage() {
   // Dashboard Modals
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [showKmModal, setShowKmModal] = useState(false);
+  const [showDirectTaskModal, setShowDirectTaskModal] = useState(false);
 
   useSupabaseSync(() => {
     setAllRequests(getRequests());
@@ -155,9 +157,19 @@ export default function DashboardPage() {
               </h2>
             </div>
             
-            <Link href="/new" className="w-11 h-11 rounded-full bg-slate-950 text-[#f4c3af] flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowDirectTaskModal(true)}
+                className="px-3 py-2 rounded-2xl bg-slate-950 text-[#f4c3af] font-bold text-xs shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Giao việc trực tiếp cho tài xế (Phòng TCTH / Admin)"
+              >
+                <Send className="w-4 h-4 text-[#f4c3af]" />
+                <span>Giao việc trực tiếp</span>
+              </button>
+              <Link href="/new" className="w-10 h-10 rounded-full bg-slate-950 text-[#f4c3af] flex items-center justify-center shadow-lg hover:scale-105 transition-transform" title="Tạo đề xuất mới">
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -165,6 +177,13 @@ export default function DashboardPage() {
       {/* 3. Horizontal Quick Nav Tabs */}
       <div className="mb-6 animate-slide-up overflow-x-auto no-scrollbar" style={{ animationDelay: '0.08s' }}>
         <div className="flex items-center gap-2.5" style={{ minWidth: 'max-content' }}>
+          <button
+            onClick={() => setShowDirectTaskModal(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/40 hover:border-cyan-400 px-4 py-2.5 rounded-full text-xs font-bold text-cyan-300 transition-all shadow-lg shadow-cyan-500/10 cursor-pointer"
+          >
+            <Send className="w-4 h-4 text-cyan-400" />
+            <span>Giao việc trực tiếp</span>
+          </button>
           <Link href="/new" className="flex items-center gap-2 bg-white/[0.05] border border-white/10 hover:bg-white/10 px-4 py-2.5 rounded-full text-xs font-semibold text-slate-200 transition-all">
             <PlusCircle className="w-4 h-4 text-[#f4c3af]" />
             <span>Tạo đề xuất mới</span>
@@ -200,7 +219,10 @@ export default function DashboardPage() {
             <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Hệ sinh thái số VietinBank</p>
             <h3 className="text-sm font-bold text-white mt-0.5">Số hóa quy trình điều xe Nam Sài Gòn</h3>
             <div className="flex gap-2 mt-3">
-              <Link href="/new" className="text-[10px] bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 px-2.5 py-1 rounded-full hover:bg-cyan-500/20">
+              <button onClick={() => setShowDirectTaskModal(true)} className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-3 py-1 rounded-full hover:bg-cyan-500/30 font-bold flex items-center gap-1 cursor-pointer">
+                <Send className="w-3 h-3 text-cyan-400" /> Giao việc trực tiếp
+              </button>
+              <Link href="/new" className="text-[10px] bg-white/[0.06] text-slate-300 border border-white/10 px-2.5 py-1 rounded-full hover:bg-white/10">
                 → Đăng ký nhanh
               </Link>
             </div>
@@ -222,7 +244,15 @@ export default function DashboardPage() {
 
         <div className="bg-[#121929]/90 border border-white/10 rounded-3xl p-5 shadow-2xl backdrop-blur-2xl grid grid-cols-3 gap-y-6 gap-x-2">
           
-          {/* Item 1: Tạo đề xuất */}
+          {/* Item 1: Giao việc trực tiếp (Luôn hiển thị cho TCTH / Admin / Lãnh đạo) */}
+          <button onClick={() => setShowDirectTaskModal(true)} className="flex flex-col items-center text-center group cursor-pointer">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/25 to-blue-600/25 border border-cyan-500/40 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform mb-2 shadow-lg shadow-cyan-500/15">
+              <Send className="w-6 h-6" />
+            </div>
+            <span className="text-[11px] font-bold text-cyan-300 leading-tight">Giao việc trực tiếp</span>
+          </button>
+
+          {/* Item 2: Tạo đề xuất */}
           <Link href="/new" className="flex flex-col items-center text-center group">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#f4c3af]/20 to-[#e0a98b]/20 border border-[#f4c3af]/30 flex items-center justify-center text-[#f4c3af] group-hover:scale-110 transition-transform mb-2">
               <PlusCircle className="w-6 h-6" />
@@ -254,7 +284,7 @@ export default function DashboardPage() {
             </Link>
           )}
 
-          {/* Item 3: Quản lý đề xuất (Hiển thị cho TCTH & Admin) */}
+          {/* Item 4: Quản lý đề xuất (Hiển thị cho TCTH & Admin) */}
           {user && ['tcth', 'admin'].includes(user.role) && (
             <Link href="/admin/requests" className="flex flex-col items-center text-center group">
               <div className="w-12 h-12 rounded-2xl bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-400 group-hover:scale-110 transition-transform mb-2">
@@ -506,12 +536,16 @@ export default function DashboardPage() {
               <p className="font-semibold text-white mb-1">💡 Báo cáo chi tiết:</p>
               Dữ liệu kilomet được ghi nhận trực tiếp từ chỉ số công tơ mét (ODO) do tài xế nhập sau mỗi chuyến đi hoàn thành.
             </div>
-            <button onClick={() => setShowKmModal(false)} className="btn-primary w-full mt-5 text-xs py-2.5">
-              Đóng
-            </button>
           </div>
         </div>
       )}
+
+      {/* Direct Task Assignment Modal */}
+      <DirectTaskModal
+        isOpen={showDirectTaskModal}
+        onClose={() => setShowDirectTaskModal(false)}
+        onSuccess={() => setAllRequests(getRequests())}
+      />
 
     </div>
   );

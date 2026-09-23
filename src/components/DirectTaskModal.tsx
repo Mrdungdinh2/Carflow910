@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, Truck, Car, Calendar, MapPin, FileText, User } from 'lucide-react';
 import { getVehicles, getDrivers } from '@/lib/vehicleStorage';
-import { createDirectTask, getRequests } from '@/lib/storage';
+import { createDirectTask, getRequests, getDriverCurrentStatus, getVehicleCurrentStatus } from '@/lib/storage';
 import { getAvailableVehiclesForTimeRange, getAvailableDriversForTimeRange } from '@/lib/conflictCheck';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/Toast';
@@ -30,25 +30,40 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
   const [startDateTime, setStartDateTime] = useState('');
   const [endDateTime, setEndDateTime] = useState('');
 
-  // [Fix B] Cập nhật danh sách xe/TX dựa trên conflict-check time-range
-  const refreshAvailableResources = (start: string, end: string) => {
+  // Cập nhật danh sách xe/TX dựa trên conflict-check time-range
+  const refreshAvailableResources = (start: string, end: string, currentDriverId?: string, currentVehicleId?: string) => {
     const allVehicles = getVehicles();
     const allDrivers = getDrivers();
     const allReqs = getRequests();
 
-    if (start && end) {
-      // Dùng conflict-check đầy đủ thay vì chỉ lọc status
+    if (start && end && new Date(end).getTime() > new Date(start).getTime()) {
+      // Dùng conflict-check đầy đủ theo khung giờ
       const availV = getAvailableVehiclesForTimeRange(allVehicles, allReqs, start, end);
       const availD = getAvailableDriversForTimeRange(allDrivers, allReqs, start, end);
       setVehicles(availV);
       setDrivers(availD);
-      // Auto-select first available
-      setSelectedVehicleId(availV.length > 0 ? availV[0].id : '');
-      setSelectedDriverId(availD.length > 0 ? availD[0].id : '');
+
+      // Giữ nguyên lựa chọn tài xế hiện tại nếu tài xế đó vẫn rảnh trong khung giờ mới
+      const driverToKeep = currentDriverId ?? selectedDriverId;
+      if (driverToKeep && availD.some(d => d.id === driverToKeep)) {
+        setSelectedDriverId(driverToKeep);
+      } else {
+        setSelectedDriverId(availD.length > 0 ? availD[0].id : '');
+      }
+
+      // Giữ nguyên lựa chọn phương tiện hiện tại nếu xe đó vẫn rảnh trong khung giờ mới
+      const vehicleToKeep = currentVehicleId ?? selectedVehicleId;
+      if (vehicleToKeep && availV.some(v => v.id === vehicleToKeep)) {
+        setSelectedVehicleId(vehicleToKeep);
+      } else {
+        setSelectedVehicleId(availV.length > 0 ? availV[0].id : '');
+      }
     } else {
-      // Fallback: lọc đơn giản theo status
-      setVehicles(allVehicles.filter(v => v.status === 'available'));
-      setDrivers(allDrivers.filter(d => d.status === 'available'));
+      // Fallback: lọc đơn giản các xe/tài xế hoạt động
+      const availV = allVehicles.filter(v => v.status !== 'maintenance' && v.status !== 'retired');
+      const availD = allDrivers.filter(d => d.status !== 'day_off' && d.status !== 'sick_leave');
+      setVehicles(availV);
+      setDrivers(availD);
     }
   };
 
@@ -64,7 +79,6 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
       setStartDateTime(startIso);
       setEndDateTime(endIso);
 
-      // [Fix B] Dùng conflict-check time-range để lọc xe/TX
       refreshAvailableResources(startIso, endIso);
     }
   }, [isOpen]);
@@ -158,17 +172,27 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
             >
               <option value="" className="bg-[#121929]">-- Chọn tài xế --</option>
               {drivers.length === 0 ? (
-                <option disabled className="bg-[#121929]">⚠ Không có tài xế sẵn sàng</option>
+                <option disabled className="bg-[#121929]">⚠ Không có tài xế sẵn sàng trong khung giờ này</option>
               ) : (
-                drivers.map(d => (
-                  <option key={d.id} value={d.id} className="bg-[#121929]">
-                    {d.name} ({d.phone}) - [🟢 Sẵn sàng]
-                  </option>
-                ))
+                drivers.map(d => {
+                  const currentSt = getDriverCurrentStatus(d.id);
+                  let statusTag = '[🟢 Sẵn sàng]';
+                  if (currentSt === 'on_duty') {
+                    statusTag = '[🔵 Đang công tác - Rảnh khung giờ này]';
+                  } else if (currentSt === 'reserved') {
+                    statusTag = '[🟡 Đã gán lịch khác]';
+                  }
+
+                  return (
+                    <option key={d.id} value={d.id} className="bg-[#121929]">
+                      {d.name} ({d.phone}) - {statusTag}
+                    </option>
+                  );
+                })
               )}
             </select>
             {drivers.length === 0 && (
-              <p className="text-[10px] text-red-400 mt-1">⚠ Tất cả tài xế đang bận hoặc nghỉ phép. Không thể giao nhiệm vụ.</p>
+              <p className="text-[10px] text-red-400 mt-1">⚠ Tất cả tài xế đang bận hoặc nghỉ phép trong khung giờ này.</p>
             )}
           </div>
 
@@ -185,17 +209,27 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
             >
               <option value="" className="bg-[#121929]">-- Chọn xe ô tô --</option>
               {vehicles.length === 0 ? (
-                <option disabled className="bg-[#121929]">⚠ Không có xe sẵn sàng</option>
+                <option disabled className="bg-[#121929]">⚠ Không có xe sẵn sàng trong khung giờ này</option>
               ) : (
-                vehicles.map(v => (
-                  <option key={v.id} value={v.id} className="bg-[#121929]">
-                    {v.plateNumber} • {v.model} ({v.seats} chỗ) - [🟢 Sẵn sàng]
-                  </option>
-                ))
+                vehicles.map(v => {
+                  const currentSt = getVehicleCurrentStatus(v.id);
+                  let statusTag = '[🟢 Sẵn sàng]';
+                  if (currentSt === 'in_use') {
+                    statusTag = '[🔵 Đang công tác - Trống khung giờ này]';
+                  } else if (currentSt === 'reserved') {
+                    statusTag = '[🟡 Đã gán lịch khác]';
+                  }
+
+                  return (
+                    <option key={v.id} value={v.id} className="bg-[#121929]">
+                      {v.plateNumber} • {v.model} ({v.seats} chỗ) - {statusTag}
+                    </option>
+                  );
+                })
               )}
             </select>
             {vehicles.length === 0 && (
-              <p className="text-[10px] text-red-400 mt-1">⚠ Tất cả xe đang bận hoặc bảo trì. Không thể giao nhiệm vụ.</p>
+              <p className="text-[10px] text-red-400 mt-1">⚠ Tất cả xe đang bận hoặc bảo trì trong khung giờ này.</p>
             )}
           </div>
 
@@ -225,10 +259,12 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
                 required
                 value={startDateTime}
                 onChange={(e) => {
-                setStartDateTime(e.target.value);
-                // [Fix B] Cập nhật lại danh sách xe/TX khi đổi thời gian
-                if (e.target.value && endDateTime) refreshAvailableResources(e.target.value, endDateTime);
-              }}
+                  const newStart = e.target.value;
+                  setStartDateTime(newStart);
+                  if (newStart && endDateTime) {
+                    refreshAvailableResources(newStart, endDateTime, selectedDriverId, selectedVehicleId);
+                  }
+                }}
                 min={(() => {
                   const now = new Date();
                   const pad = (n: number) => String(n).padStart(2, '0');
@@ -246,10 +282,12 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
                 required
                 value={endDateTime}
                 onChange={(e) => {
-                setEndDateTime(e.target.value);
-                // [Fix B] Cập nhật lại danh sách xe/TX khi đổi thời gian
-                if (startDateTime && e.target.value) refreshAvailableResources(startDateTime, e.target.value);
-              }}
+                  const newEnd = e.target.value;
+                  setEndDateTime(newEnd);
+                  if (startDateTime && newEnd) {
+                    refreshAvailableResources(startDateTime, newEnd, selectedDriverId, selectedVehicleId);
+                  }
+                }}
                 min={startDateTime || (() => {
                   const now = new Date();
                   const pad = (n: number) => String(n).padStart(2, '0');

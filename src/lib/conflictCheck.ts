@@ -11,14 +11,21 @@ export interface ConflictResult {
 /**
  * Check if two time ranges overlap
  */
+function parseTime(timeStr: string): number {
+  if (!timeStr) return 0;
+  const t = new Date(timeStr).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
 function timeRangesOverlap(
   start1: string, end1: string,
   start2: string, end2: string
 ): boolean {
-  const s1 = new Date(start1).getTime();
-  const e1 = new Date(end1).getTime();
-  const s2 = new Date(start2).getTime();
-  const e2 = new Date(end2).getTime();
+  const s1 = parseTime(start1);
+  const e1 = parseTime(end1);
+  const s2 = parseTime(start2);
+  const e2 = parseTime(end2);
+  if (!s1 || !e1 || !s2 || !e2) return false;
   return s1 < e2 && s2 < e1;
 }
 
@@ -30,14 +37,21 @@ export function isVehicleAvailable(
   startTime: string,
   endTime: string,
   allRequests: VehicleRequest[],
-  excludeRequestId?: string
+  excludeRequestId?: string,
+  plateNumber?: string
 ): { available: boolean; conflictWith?: VehicleRequest } {
   const activeStatuses = ['tcth_approved', 'bgd_approved', 'driver_accepted'];
+  const targetId = vehicleId.toLowerCase();
+  const targetPlate = plateNumber ? plateNumber.toLowerCase() : '';
 
   for (const req of allRequests) {
     if (req.id === excludeRequestId) continue;
     if (!activeStatuses.includes(req.status)) continue;
-    if (req.assignedVehicleId !== vehicleId) continue;
+    if (!req.assignedVehicleId) continue;
+
+    const assigned = req.assignedVehicleId.toLowerCase();
+    const isMatch = assigned === targetId || (targetPlate && assigned === targetPlate);
+    if (!isMatch) continue;
 
     if (timeRangesOverlap(startTime, endTime, req.startDateTime, req.endDateTime)) {
       return { available: false, conflictWith: req };
@@ -55,14 +69,21 @@ export function isDriverAvailable(
   startTime: string,
   endTime: string,
   allRequests: VehicleRequest[],
-  excludeRequestId?: string
+  excludeRequestId?: string,
+  driverName?: string
 ): { available: boolean; conflictWith?: VehicleRequest } {
   const activeStatuses = ['tcth_approved', 'bgd_approved', 'driver_accepted'];
+  const targetId = driverId.toLowerCase();
+  const targetName = driverName ? driverName.toLowerCase() : '';
 
   for (const req of allRequests) {
     if (req.id === excludeRequestId) continue;
     if (!activeStatuses.includes(req.status)) continue;
-    if (req.assignedDriverId !== driverId) continue;
+    if (!req.assignedDriverId) continue;
+
+    const assigned = req.assignedDriverId.toLowerCase();
+    const isMatch = assigned === targetId || (targetName && assigned === targetName);
+    if (!isMatch) continue;
 
     if (timeRangesOverlap(startTime, endTime, req.startDateTime, req.endDateTime)) {
       return { available: false, conflictWith: req };
@@ -91,7 +112,7 @@ export function getAvailableVehiclesForTimeRange(
     if (v.status === 'maintenance' || v.status === 'retired') return false;
 
     // Kiểm tra trùng lịch thời gian cụ thể với các đề xuất khác
-    const { available } = isVehicleAvailable(v.id, startTime, endTime, allRequests, excludeRequestId);
+    const { available } = isVehicleAvailable(v.id, startTime, endTime, allRequests, excludeRequestId, v.plateNumber);
     return available;
   });
 }
@@ -113,7 +134,7 @@ export function getAvailableDriversForTimeRange(
     if (d.status === 'day_off' || d.status === 'sick_leave') return false;
 
     // Kiểm tra trùng lịch thời gian cụ thể với các đề xuất khác
-    const { available } = isDriverAvailable(d.id, startTime, endTime, allRequests, excludeRequestId);
+    const { available } = isDriverAvailable(d.id, startTime, endTime, allRequests, excludeRequestId, d.name);
     return available;
   });
 }
