@@ -83,7 +83,7 @@ export function DirectTaskModal({ isOpen, onClose, onSuccess }: DirectTaskModalP
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !user || !['tcth', 'admin'].includes(user.role)) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
