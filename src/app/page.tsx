@@ -225,7 +225,7 @@ export default function DashboardPage() {
             <Clock className="w-4 h-4 text-cyan-400" />
             <span>Lịch sử chuyến đi</span>
           </Link>
-          {pendingCount > 0 && ['dept_head', 'tcth', 'director'].includes(user?.role || '') && (
+          {pendingCount > 0 && ['dept_head', 'tcth'].includes(user?.role || '') && (
             <Link href="/approve" className="flex items-center gap-2 bg-rose-500/10 border border-rose-500/30 px-4 py-2.5 rounded-full text-xs font-semibold text-rose-300 transition-all animate-pulse">
               <CheckSquare className="w-4 h-4 text-rose-400" />
               <span>Phê duyệt ngay ({pendingCount})</span>
@@ -302,7 +302,7 @@ export default function DashboardPage() {
             </Link>
           )}
 
-          {/* Item 2: Phê duyệt / Đề xuất của tôi (Role tailored) */}
+          {/* Item 2: Phê duyệt / Đề xuất của tôi (Role tailored) — Ẩn hoàn toàn cho Director */}
           {user?.role === 'staff' ? (
             <Link href="/history" className="flex flex-col items-center text-center group">
               <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform mb-2">
@@ -310,7 +310,7 @@ export default function DashboardPage() {
               </div>
               <span className="text-[11px] font-medium text-slate-200 leading-tight">Đề xuất của tôi</span>
             </Link>
-          ) : (
+          ) : user?.role !== 'director' ? (
             <Link href="/approve" className="flex flex-col items-center text-center group relative">
               <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform mb-2">
                 <CheckSquare className="w-6 h-6" />
@@ -321,10 +321,10 @@ export default function DashboardPage() {
                 </span>
               )}
               <span className="text-[11px] font-medium text-slate-200 leading-tight">
-                {user?.role === 'director' ? 'Giám sát duyệt' : 'Phê duyệt'}
+                Phê duyệt
               </span>
             </Link>
-          )}
+          ) : null}
 
           {/* Item 4: Quản lý đề xuất (Hiển thị cho TCTH & Admin) */}
           {user && ['tcth', 'admin'].includes(user.role) && (
