@@ -65,15 +65,15 @@ export default function DateTimePicker({
   return (
     <div className="flex flex-col gap-1.5 w-full">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-cyan-400" />
+        <label className="text-sm font-bold text-white flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-[#D4A855]" />
           {label}
         </label>
         {hint && (
           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
             isMidnight
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-              : 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20'
+              ? 'bg-amber-500/20 text-[#D4A855] border border-amber-500/30'
+              : 'bg-cyan-500/10 text-[#D4A855] border border-cyan-500/20'
           }`}>
             {hint}
           </span>
@@ -96,16 +96,16 @@ export default function DateTimePicker({
       />
 
       {error && (
-        <div className="flex flex-col gap-1.5 mt-1 bg-red-500/10 border border-red-500/20 p-2.5 rounded-xl text-xs text-red-300">
+        <div className="flex flex-col gap-1.5 mt-1 bg-red-500/10 border border-red-500/20 p-2.5 rounded-xl text-xs text-[#D4A855]">
           <div className="flex items-center gap-1.5 font-semibold">
-            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-[#D4A855] shrink-0" />
             <span>{error}</span>
           </div>
           {onFixMidnight && (
             <button
               type="button"
               onClick={onFixMidnight}
-              className="mt-1 self-start px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 rounded-lg font-semibold flex items-center gap-1.5 transition-all text-xs shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+              className="mt-1 self-start px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[#D4A855] rounded-lg font-semibold flex items-center gap-1.5 transition-all text-xs shadow-sm hover:scale-[1.02] active:scale-[0.98]"
             >
               <span>👉 Chuyển ngay thành 12:xx CH (Buổi trưa)</span>
             </button>

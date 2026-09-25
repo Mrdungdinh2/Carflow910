@@ -27,7 +27,7 @@ export function StatusBadge({ status, compact }: StatusBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-medium rounded-full ${config.color} ${config.bgColor} ${
+      className={`inline-flex items-center gap-1 font-bold rounded-full ${config.color} ${config.bgColor} ${
         compact ? 'text-[9px] px-1.5 py-0.5' : 'text-[10px] px-2 py-0.5'
       }`}
     >

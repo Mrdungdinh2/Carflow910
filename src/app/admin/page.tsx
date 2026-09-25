@@ -68,53 +68,53 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-4 pb-28 max-w-lg mx-auto animate-fade-in">
-      <h1 className="text-xl font-bold mb-6 text-white text-center">Quản trị Hệ thống CarFlow 910</h1>
+      <h1 className="text-xl font-extrabold mb-6 text-white text-center">Quản trị Hệ thống CarFlow 910</h1>
       
       <div className="grid grid-cols-1 gap-4">
         <Link href="/admin/users">
           <GlassCard className="p-5 flex items-center gap-4 hover:bg-white/10 transition-colors">
-            <div className="p-3 rounded-2xl bg-blue-500/20 text-blue-400">
+            <div className="p-3 rounded-2xl bg-blue-500/20 text-[#D4A855]">
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white">Quản lý Người dùng</h2>
-              <p className="text-xs text-gray-400">Thêm, sửa, xóa tài khoản & phân quyền</p>
+              <h2 className="text-base font-bold text-white">Quản lý Người dùng</h2>
+              <p className="text-xs text-[#9CA3AF]">Thêm, sửa, xóa tài khoản & phân quyền</p>
             </div>
           </GlassCard>
         </Link>
 
         <Link href="/admin/vehicles">
           <GlassCard className="p-5 flex items-center gap-4 hover:bg-white/10 transition-colors">
-            <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-400">
+            <div className="p-3 rounded-2xl bg-emerald-500/20 text-[#D4A855]">
               <Car className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white">Quản lý Phương tiện</h2>
-              <p className="text-xs text-gray-400">Danh sách xe, sức chứa & biển số</p>
+              <h2 className="text-base font-bold text-white">Quản lý Phương tiện</h2>
+              <p className="text-xs text-[#9CA3AF]">Danh sách xe, sức chứa & biển số</p>
             </div>
           </GlassCard>
         </Link>
 
         <Link href="/admin/departments">
           <GlassCard className="p-5 flex items-center gap-4 hover:bg-white/10 transition-colors">
-            <div className="p-3 rounded-2xl bg-purple-500/20 text-purple-400">
+            <div className="p-3 rounded-2xl bg-purple-500/20 text-[#D4A855]">
               <Building className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white">Quản lý Phòng ban</h2>
-              <p className="text-xs text-gray-400">Danh sách các đơn vị phòng ban</p>
+              <h2 className="text-base font-bold text-white">Quản lý Phòng ban</h2>
+              <p className="text-xs text-[#9CA3AF]">Danh sách các đơn vị phòng ban</p>
             </div>
           </GlassCard>
         </Link>
 
         <Link href="/admin/requests">
           <GlassCard className="p-5 flex items-center gap-4 hover:bg-white/10 transition-colors border-cyan-500/20">
-            <div className="p-3 rounded-2xl bg-rose-500/20 text-rose-400">
+            <div className="p-3 rounded-2xl bg-rose-500/20 text-[#D4A855]">
               <FileText className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white">Quản lý Đề xuất</h2>
-              <p className="text-xs text-gray-400">Xem, thống kê, lọc & xóa đề xuất điều xe</p>
+              <h2 className="text-base font-bold text-white">Quản lý Đề xuất</h2>
+              <p className="text-xs text-[#9CA3AF]">Xem, thống kê, lọc & xóa đề xuất điều xe</p>
             </div>
           </GlassCard>
         </Link>
@@ -122,16 +122,16 @@ export default function AdminDashboard() {
         {/* Supabase Dynamic Data Sync & Export Card */}
         <GlassCard className="p-5 border-cyan-500/30 bg-cyan-950/20 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-cyan-500/20 text-cyan-400 shrink-0">
+            <div className="p-3 rounded-2xl bg-cyan-500/20 text-[#D4A855] shrink-0">
               <Database className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-base font-bold text-white">Đồng bộ Dữ liệu thực tế lên Supabase</h2>
-              <p className="text-xs text-cyan-300">Xuất SQL & Đẩy Người dùng, Phương tiện, Phòng ban thực tế</p>
+              <p className="text-xs text-[#D4A855]">Xuất SQL & Đẩy Người dùng, Phương tiện, Phòng ban thực tế</p>
             </div>
           </div>
 
-          <p className="text-xs text-slate-300 leading-relaxed">
+          <p className="text-xs text-white leading-relaxed">
             Công cụ trích xuất chính xác toàn bộ danh sách **Người dùng**, **Phương tiện** và **Phòng ban** mà bạn đã tạo/sửa đổi trong ứng dụng để đồng bộ lên Supabase Database.
           </p>
 
@@ -150,25 +150,25 @@ export default function AdminDashboard() {
               disabled={syncing}
               className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
                 isSupabaseConfigured
-                  ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30'
-                  : 'bg-slate-800 border border-slate-700 text-slate-400 opacity-80'
+                  ? 'bg-emerald-500/20 border border-emerald-500/40 text-[#D4A855] hover:bg-emerald-500/30'
+                  : 'bg-slate-800 border border-slate-700 text-[#9CA3AF] opacity-80'
               }`}
             >
               {syncing ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" /> Đang đẩy dữ liệu lên Supabase...
+                  <RefreshCw className="w-4 h-4 animate-spin text-[#D4A855]" /> Đang đẩy dữ liệu lên Supabase...
                 </>
               ) : (
                 <>
-                  <UploadCloud className="w-4 h-4 text-emerald-400" /> Đẩy dữ liệu trực tiếp lên Supabase API
+                  <UploadCloud className="w-4 h-4 text-[#D4A855]" /> Đẩy dữ liệu trực tiếp lên Supabase API
                 </>
               )}
             </button>
           </div>
 
-          <div className="pt-2 border-t border-white/10 flex justify-between items-center text-[11px] text-slate-400">
+          <div className="pt-2 border-t border-white/10 flex justify-between items-center text-[11px] text-[#9CA3AF]">
             <span>Trạng thái kết nối Supabase:</span>
-            <span className={isSupabaseConfigured ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+            <span className={isSupabaseConfigured ? 'text-[#D4A855] font-bold' : 'text-[#D4A855] font-bold'}>
               {isSupabaseConfigured ? '🟢 Đã cấu hình (.env)' : '🟡 Chưa điền API Key (.env)'}
             </span>
           </div>

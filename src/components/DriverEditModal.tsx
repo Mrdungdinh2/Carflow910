@@ -66,17 +66,17 @@ export function DriverEditModal({ driver, isOpen, onClose, onSuccess }: DriverEd
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-400">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 flex items-center justify-center text-[#D4A855]">
               <User className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-bold text-white">Chỉnh sửa thông tin Tài xế</h2>
-              <p className="text-[11px] text-slate-400">Cập nhật Số điện thoại & Hạng bằng lái</p>
+              <p className="text-[11px] text-[#9CA3AF]">Cập nhật Số điện thoại & Hạng bằng lái</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-white/10 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -85,8 +85,8 @@ export function DriverEditModal({ driver, isOpen, onClose, onSuccess }: DriverEd
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-cyan-400" />
+            <label className="block text-xs font-bold text-white mb-1.5 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-[#D4A855]" />
               Họ và tên Tài xế
             </label>
             <input
@@ -100,8 +100,8 @@ export function DriverEditModal({ driver, isOpen, onClose, onSuccess }: DriverEd
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-emerald-400" />
+            <label className="block text-xs font-bold text-white mb-1.5 flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-[#D4A855]" />
               Số điện thoại liên hệ
             </label>
             <input
@@ -116,8 +116,8 @@ export function DriverEditModal({ driver, isOpen, onClose, onSuccess }: DriverEd
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5 text-purple-400" />
+              <label className="block text-xs font-bold text-white mb-1.5 flex items-center gap-1.5">
+                <CreditCard className="w-3.5 h-3.5 text-[#D4A855]" />
                 Hạng bằng lái
               </label>
               <select
@@ -135,7 +135,7 @@ export function DriverEditModal({ driver, isOpen, onClose, onSuccess }: DriverEd
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-white mb-1.5">
                 Trạng thái làm việc
               </label>
               <select
@@ -155,7 +155,7 @@ export function DriverEditModal({ driver, isOpen, onClose, onSuccess }: DriverEd
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-semibold transition-colors"
+              className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors"
             >
               Hủy
             </button>

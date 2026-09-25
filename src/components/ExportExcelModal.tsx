@@ -96,8 +96,8 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
     <div className="fixed inset-0 z-[100] bg-[#090d16]/90 backdrop-blur-xl flex items-center justify-center p-4">
       <div className="bg-[#121929] border border-white/10 rounded-3xl p-6 shadow-2xl animate-scale-in w-full max-w-5xl max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
+          <h2 className="text-2xl font-extrabold text-white flex items-center gap-2">
+            <FileSpreadsheet className="w-6 h-6 text-[#D4A855]" />
             Xuất dữ liệu Excel
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/60 hover:text-white">
@@ -109,8 +109,8 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
           {/* Filters section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm text-white/60 flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> Thời gian
+              <label className="text-sm font-bold text-[#9CA3AF] flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#D4A855]" /> Thời gian
               </label>
               <div className="flex gap-2">
                 <input 
@@ -130,8 +130,8 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-white/60 flex items-center gap-2">
-                <Filter className="w-4 h-4" /> Trạng thái
+              <label className="text-sm font-bold text-[#9CA3AF] flex items-center gap-2">
+                <Filter className="w-4 h-4 text-[#D4A855]" /> Trạng thái
               </label>
               <div className="flex flex-wrap gap-2">
                 {allStatuses.map(status => (
@@ -140,7 +140,7 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
                     onClick={() => toggleStatus(status)}
                     className={`px-3 py-1 rounded-full text-xs transition-colors border ${
                       selectedStatuses.includes(status) 
-                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' 
+                        ? 'bg-emerald-500/20 border-emerald-500/50 text-[#D4A855]' 
                         : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'
                     }`}
                   >
@@ -151,8 +151,8 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm text-white/60 flex items-center gap-2">
-                <Car className="w-4 h-4" /> Xe
+              <label className="text-sm font-bold text-[#9CA3AF] flex items-center gap-2">
+                <Car className="w-4 h-4 text-[#D4A855]" /> Xe
               </label>
               <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar p-2 bg-white/5 rounded-xl border border-white/10">
                 {vehicles.map(v => (
@@ -161,7 +161,7 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
                     onClick={() => toggleVehicle(v.id)}
                     className={`px-2 py-1 rounded-lg text-xs transition-colors ${
                       selectedVehicles.includes(v.id)
-                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                        ? 'bg-blue-500/20 text-[#D4A855] border border-blue-500/30'
                         : 'bg-white/5 text-white/60 hover:bg-white/10 border border-transparent'
                     }`}
                   >
@@ -173,8 +173,8 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-white/60 flex items-center gap-2">
-                <User className="w-4 h-4" /> Tài xế
+              <label className="text-sm font-bold text-[#9CA3AF] flex items-center gap-2">
+                <User className="w-4 h-4 text-[#D4A855]" /> Tài xế
               </label>
               <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar p-2 bg-white/5 rounded-xl border border-white/10">
                 {drivers.map(d => (
@@ -183,7 +183,7 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
                     onClick={() => toggleDriver(d.id)}
                     className={`px-2 py-1 rounded-lg text-xs transition-colors ${
                       selectedDrivers.includes(d.id)
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                        ? 'bg-purple-500/20 text-[#D4A855] border border-purple-500/30'
                         : 'bg-white/5 text-white/60 hover:bg-white/10 border border-transparent'
                     }`}
                   >
@@ -198,8 +198,8 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
           {/* Preview section */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-white flex items-center gap-2">
-                <Eye className="w-4 h-4 text-blue-400" /> Xem trước kết quả
+              <label className="text-sm font-bold text-white flex items-center gap-2">
+                <Eye className="w-4 h-4 text-[#D4A855]" /> Xem trước kết quả
               </label>
               <span className="text-xs text-white/50 bg-white/5 px-2 py-1 rounded-full">
                 {filteredData.length} kết quả
@@ -232,9 +232,9 @@ export function ExportExcelModal({ isOpen, onClose }: Props) {
                         <td className="px-4 py-2 text-white/80">{r.requesterName}</td>
                         <td className="px-4 py-2 text-white/60">{r.department}</td>
                         <td className="px-4 py-2 text-white/80 max-w-[150px] truncate">{r.destination}</td>
-                        <td className="px-4 py-2 text-blue-400">{vehicle?.plateNumber || '-'}</td>
-                        <td className="px-4 py-2 text-purple-400">{driver?.name || '-'}</td>
-                        <td className="px-4 py-2 text-emerald-400">{km}</td>
+                        <td className="px-4 py-2 text-[#D4A855]">{vehicle?.plateNumber || '-'}</td>
+                        <td className="px-4 py-2 text-[#D4A855]">{driver?.name || '-'}</td>
+                        <td className="px-4 py-2 text-[#D4A855]">{km}</td>
                         <td className="px-4 py-2">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] ${STATUS_CONFIG[r.status as keyof typeof STATUS_CONFIG]?.color || 'bg-gray-500/20 text-gray-400'}`}>
                             {STATUS_CONFIG[r.status as keyof typeof STATUS_CONFIG]?.label}

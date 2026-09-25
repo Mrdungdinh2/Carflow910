@@ -122,9 +122,9 @@ export default function HistoryPage() {
           <ClipboardList className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-white">Lịch sử đề xuất</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            <span className="text-cyan-300 font-semibold">{authUser?.department || 'Chi nhánh Nam Sài Gòn'}</span> • {requests.length} đề xuất tổng cộng
+          <h1 className="text-xl font-extrabold text-white">Lịch sử đề xuất</h1>
+          <p className="text-xs text-[#9CA3AF] mt-0.5">
+            <span className="text-[#D4A855] font-bold">{authUser?.department || 'Chi nhánh Nam Sài Gòn'}</span> • {requests.length} đề xuất tổng cộng
           </p>
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function HistoryPage() {
       {/* Search */}
       <div className="mb-4 animate-slide-up" style={{ animationDelay: '0.05s' }}>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
           <input
             type="text"
             placeholder="Tìm theo tên, nơi đến, phòng ban..."
@@ -163,10 +163,10 @@ export default function HistoryPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveFilter(tab.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 ${
                   activeFilter === tab.key
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                    : 'bg-white/[0.04] text-slate-400 border border-white/[0.06] hover:bg-white/[0.08]'
+                    ? 'bg-cyan-500/20 text-[#D4A855] border border-cyan-500/30'
+                    : 'bg-white/[0.04] text-[#9CA3AF] border border-white/[0.06] hover:bg-white/[0.08]'
                 }`}
               >
                 {tab.label}
@@ -184,21 +184,21 @@ export default function HistoryPage() {
             <div className="flex flex-col items-center">
               {searchQuery || activeFilter !== 'all' ? (
                 <>
-                  <Filter className="w-10 h-10 text-slate-600 mb-3" />
-                  <p className="text-sm text-slate-500 mb-1">
+                  <Filter className="w-10 h-10 text-[#9CA3AF] mb-3" />
+                  <p className="text-sm text-[#9CA3AF] mb-1">
                     Không tìm thấy đề xuất
                   </p>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-[#9CA3AF]">
                     Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
                   </p>
                 </>
               ) : (
                 <>
-                  <Car className="w-10 h-10 text-slate-600 mb-3" />
-                  <p className="text-sm text-slate-500 mb-1">
+                  <Car className="w-10 h-10 text-[#9CA3AF] mb-3" />
+                  <p className="text-sm text-[#9CA3AF] mb-1">
                     Chưa có đề xuất nào
                   </p>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-[#9CA3AF]">
                     Tạo đề xuất đầu tiên bằng tab &quot;Tạo mới&quot; bên dưới
                   </p>
                 </>
@@ -216,20 +216,20 @@ export default function HistoryPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-semibold text-white truncate">
+                        <p className="text-sm font-bold text-white truncate">
                           {req.destination || 'Chưa có nơi đến'}
                         </p>
                       </div>
-                      <p className="text-xs text-slate-400 truncate">
+                      <p className="text-xs text-[#9CA3AF] truncate">
                         {req.requesterName} • {req.department}
                       </p>
                       {req.startDateTime && req.endDateTime && (
                         <div className="flex items-center gap-2 mt-1.5">
-                          <span className="text-[10px] text-slate-500 bg-white/[0.04] px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] text-[#9CA3AF] bg-white/[0.04] px-2 py-0.5 rounded-full">
                             {formatDate(req.startDateTime)} {formatTime(req.startDateTime)}
                           </span>
-                          <span className="text-[10px] text-slate-600">→</span>
-                          <span className="text-[10px] text-slate-500 bg-white/[0.04] px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] text-[#9CA3AF]">→</span>
+                          <span className="text-[10px] text-[#9CA3AF] bg-white/[0.04] px-2 py-0.5 rounded-full">
                             {formatDate(req.endDateTime)} {formatTime(req.endDateTime)}
                           </span>
                         </div>
@@ -238,13 +238,13 @@ export default function HistoryPage() {
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       <StatusBadge status={req.status} />
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-600">
+                        <span className="text-[10px] text-[#9CA3AF]">
                           {req.personnel.length} người
                         </span>
                         {(req.status === 'draft' || req.status === 'rejected') && req.requesterId === authUser?.id && (
                         <button
                           onClick={(e) => handleDelete(e, req.id, req.destination || req.requesterName)}
-                          className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-400/10 transition-all"
+                          className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-[#D4A855] hover:bg-red-400/10 transition-all"
                           title="Xóa đề xuất"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

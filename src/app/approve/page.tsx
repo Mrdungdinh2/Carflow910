@@ -50,19 +50,19 @@ export default function ApprovePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="p-2 -ml-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/[0.05]"
+            className="p-2 -ml-2 text-[#9CA3AF] hover:text-white transition-colors rounded-lg hover:bg-white/[0.05]"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
-            <CheckSquare className="w-5 h-5 text-cyan-400" />
+            <CheckSquare className="w-5 h-5 text-[#D4A855]" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white">
+            <h1 className="text-lg font-extrabold text-white">
               {isOversightRole ? 'Giám sát tiến độ phê duyệt' : 'Phê duyệt đề xuất'}
             </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              <span className="text-cyan-300 font-semibold">{user?.department}</span> • {requests.length} đề xuất đang xử lý
+            <p className="text-xs text-[#9CA3AF] mt-0.5">
+              <span className="text-[#D4A855] font-bold">{user?.department}</span> • {requests.length} đề xuất đang xử lý
             </p>
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function ApprovePage() {
 
       {/* Oversight Banner */}
       {isOversightRole && (
-        <div className="mb-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-300 font-medium">
+        <div className="mb-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-[#D4A855] font-bold">
           <span className="text-base">👁️</span>
           <span>
             {user.role === 'director' ? 'Ban Giám đốc' : 'Quản trị viên'} — Quyền giám sát tiến độ phê duyệt toàn chi nhánh.
@@ -93,8 +93,8 @@ export default function ApprovePage() {
       <div className="space-y-4">
         {requests.length === 0 ? (
           <GlassCard className="p-8 text-center bg-[#121929]/80 border-white/10 rounded-3xl">
-            <CheckSquare className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-            <p className="text-sm text-slate-400">Không có đề xuất nào đang chờ duyệt</p>
+            <CheckSquare className="w-10 h-10 text-[#9CA3AF] mx-auto mb-2" />
+            <p className="text-sm text-[#9CA3AF]">Không có đề xuất nào đang chờ duyệt</p>
           </GlassCard>
         ) : (
           requests.map((req, i) => {
@@ -110,14 +110,14 @@ export default function ApprovePage() {
                   className="p-4 bg-[#121929]/80 border-white/10 rounded-2xl"
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2 font-semibold text-sm">
-                      <MapPin className="w-4 h-4 text-rose-400" />
+                    <div className="flex items-center gap-2 font-bold text-sm">
+                      <MapPin className="w-4 h-4 text-[#D4A855]" />
                       <span className="line-clamp-1">{req.destination}</span>
                     </div>
                     <StatusBadge status={req.status} />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs text-slate-400 mb-3">
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs text-[#9CA3AF] mb-3">
                     <div className="flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5" />
                       <span className="truncate">{req.requesterName}</span>
@@ -127,14 +127,14 @@ export default function ApprovePage() {
                       <span className="truncate">{req.department}</span>
                     </div>
                     <div className="flex items-center gap-1.5 col-span-2">
-                      <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                      <Clock className="w-3.5 h-3.5 text-[#D4A855]" />
                       <span>{timeStr} - {dateStr}</span>
                     </div>
                   </div>
 
                   <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Số lượng: <strong className="text-white">{req.vehicleCount} xe</strong> • <strong className="text-white">{req.personnel?.length || 0} người</strong></span>
-                    <span className="text-cyan-400 font-semibold flex items-center gap-0.5">
+                    <span className="text-[#9CA3AF]">Số lượng: <strong className="text-white">{req.vehicleCount} xe</strong> • <strong className="text-white">{req.personnel?.length || 0} người</strong></span>
+                    <span className="text-[#D4A855] font-bold flex items-center gap-0.5">
                       Xem & Xử lý →
                     </span>
                   </div>

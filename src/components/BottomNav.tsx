@@ -43,7 +43,6 @@ export function BottomNav() {
         items.push({ path: '/history', label: 'Lịch sử', icon: Clock });
         break;
       case 'director':
-        items.push({ path: '/approve', label: 'Phê duyệt', icon: CheckSquare });
         items.push({ path: '/fleet', label: 'Đoàn xe', icon: Car });
         items.push({ path: '/history', label: 'Lịch sử', icon: Clock });
         break;
@@ -59,43 +58,52 @@ export function BottomNav() {
   const leftItem = navItems[0];
   const rightItem = navItems[1] || navItems[0];
 
+  const isHome = pathname === '/';
+
   return (
     <div className="fixed bottom-3 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-      <div className="pointer-events-auto bg-[#121929]/95 backdrop-blur-2xl border border-white/15 px-6 py-2 rounded-full shadow-2xl flex items-center justify-between gap-8 max-w-sm w-full">
+      <div className="pointer-events-auto bg-[#121929]/95 backdrop-blur-2xl border border-[#D4A855]/15 px-6 py-2 rounded-full shadow-2xl flex items-center justify-between gap-8 max-w-sm w-full">
         
-        {/* Left Nav Button */}
+        {/* ══ HOME BUTTON — Nổi bật, dễ nhìn ══ */}
         <Link
-          href={leftItem.path}
-          className={`flex flex-col items-center gap-0.5 p-1 transition-all ${
-            pathname === leftItem.path ? 'text-[#f4c3af]' : 'text-slate-400 hover:text-slate-200'
-          }`}
+          href="/"
+          className="flex flex-col items-center gap-0.5 p-1 transition-all group relative"
         >
-          <CreditCard className="w-5 h-5" />
-          <span className="text-[9px] font-semibold">Home</span>
+          <div className={`relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+            isHome 
+              ? 'bg-gradient-to-br from-[#D4A855] to-[#B8902E] shadow-lg shadow-[#D4A855]/30 scale-110' 
+              : 'bg-[#D4A855]/10 border border-[#D4A855]/25 group-hover:bg-[#D4A855]/20 group-hover:scale-105'
+          }`}>
+            <Home className={`w-5 h-5 transition-colors ${isHome ? 'text-[#0c1322]' : 'text-[#D4A855]'}`} />
+            {isHome && (
+              <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#D4A855] shadow-[0_0_6px_#D4A855]" />
+            )}
+          </div>
+          <span className={`text-[9px] font-bold transition-colors ${isHome ? 'text-[#D4A855]' : 'text-[#9CA3AF]'}`}>Home</span>
         </Link>
 
-        {/* Center Glowing Action Button (Matching iPay Center QR Button) */}
+        {/* ══ Center Glowing Action Button ══ */}
         <Link
           href="/new"
           className="relative -top-5 group"
           title="Tạo đề xuất xe mới"
         >
-          <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#f4c3af] via-[#3b82f6] to-[#ec4899] p-0.5 shadow-2xl shadow-[#f4c3af]/30 group-hover:scale-110 transition-transform">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#D4A855] via-[#B8902E] to-[#D4A855] p-0.5 shadow-2xl shadow-[#D4A855]/30 group-hover:scale-110 transition-transform">
             <div className="w-full h-full rounded-full bg-[#0c1322] flex items-center justify-center text-white">
-              <QrCode className="w-6 h-6 text-[#f4c3af]" />
+              <QrCode className="w-6 h-6 text-[#D4A855]" />
             </div>
           </div>
         </Link>
 
-        {/* Right Nav Button */}
+        {/* ══ Right Nav Button ══ */}
         <Link
           href={rightItem.path}
           className={`flex flex-col items-center gap-0.5 p-1 transition-all ${
-            pathname === rightItem.path ? 'text-[#f4c3af]' : 'text-slate-400 hover:text-slate-200'
+            pathname === rightItem.path ? 'text-[#D4A855]' : 'text-[#9CA3AF] hover:text-white'
           }`}
         >
           {React.createElement(rightItem.icon, { className: 'w-5 h-5' })}
-          <span className="text-[9px] font-semibold">{rightItem.label}</span>
+          <span className="text-[9px] font-bold">{rightItem.label}</span>
         </Link>
 
       </div>

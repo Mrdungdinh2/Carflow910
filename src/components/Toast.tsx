@@ -57,16 +57,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             {/* Close Button */}
             <button
               onClick={() => dismiss(activeToast.id)}
-              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+              className="absolute top-4 right-4 p-1.5 text-[#9CA3AF] hover:text-white rounded-full hover:bg-white/10 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
 
             {/* Centered Glowing Icon Badge */}
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3.5 shadow-lg border ${
-              activeToast.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-emerald-500/20' :
-              activeToast.type === 'error' ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 shadow-rose-500/20' :
-              'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-cyan-500/20'
+              activeToast.type === 'success' ? 'bg-emerald-500/20 border-emerald-500/40 text-[#D4A855] shadow-emerald-500/20' :
+              activeToast.type === 'error' ? 'bg-rose-500/20 border-rose-500/40 text-[#D4A855] shadow-rose-500/20' :
+              'bg-cyan-500/20 border-cyan-500/40 text-[#D4A855] shadow-cyan-500/20'
             }`}>
               {activeToast.type === 'success' && <CheckCircle2 className="w-8 h-8" />}
               {activeToast.type === 'error' && <AlertTriangle className="w-8 h-8" />}
@@ -75,9 +75,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
             {/* Header Badge */}
             <span className={`text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full mb-2 border ${
-              activeToast.type === 'success' ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' :
-              activeToast.type === 'error' ? 'bg-rose-500/15 border-rose-500/30 text-rose-300' :
-              'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
+              activeToast.type === 'success' ? 'bg-emerald-500/15 border-emerald-500/30 text-[#D4A855]' :
+              activeToast.type === 'error' ? 'bg-rose-500/15 border-rose-500/30 text-[#D4A855]' :
+              'bg-cyan-500/15 border-cyan-500/30 text-[#D4A855]'
             }`}>
               {activeToast.title || (activeToast.type === 'success' ? 'Thành công' : activeToast.type === 'error' ? 'Cảnh báo hệ thống' : 'Thông báo')}
             </span>

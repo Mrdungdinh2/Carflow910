@@ -31,11 +31,11 @@ export function VehicleCard({ vehicle, isAssigned, requests, onSelect }: Vehicle
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
-            <Car className="w-5 h-5 text-cyan-400" />
+            <Car className="w-5 h-5 text-[#D4A855]" />
           </div>
           <div>
             <p className="text-sm font-bold text-white tracking-wide">{vehicle.plateNumber}</p>
-            <p className="text-xs text-slate-400">{vehicle.model}</p>
+            <p className="text-xs text-[#9CA3AF]">{vehicle.model}</p>
           </div>
         </div>
         <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${statusCfg.color} bg-white/[0.04]`}>
@@ -43,7 +43,7 @@ export function VehicleCard({ vehicle, isAssigned, requests, onSelect }: Vehicle
         </span>
       </div>
 
-      <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
+      <div className="flex items-center gap-4 mt-3 text-xs text-[#9CA3AF]">
         <div className="flex items-center gap-1">
           <Users className="w-3 h-3" />
           {vehicle.seats} chỗ
@@ -55,7 +55,7 @@ export function VehicleCard({ vehicle, isAssigned, requests, onSelect }: Vehicle
       </div>
 
       {vehicle.notes && (
-        <p className="text-[10px] text-amber-400/80 mt-2 italic">⚠ {vehicle.notes}</p>
+        <p className="text-[10px] text-[#D4A855]/80 mt-2 italic">⚠ {vehicle.notes}</p>
       )}
     </div>
   );

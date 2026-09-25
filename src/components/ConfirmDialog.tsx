@@ -54,13 +54,13 @@ export function ConfirmDialog({
             variant === 'danger' ? 'bg-red-500/10' : 'bg-cyan-500/10'
           }`}>
             <AlertTriangle className={`w-6 h-6 ${
-              variant === 'danger' ? 'text-red-400' : 'text-cyan-400'
+              variant === 'danger' ? 'text-[#D4A855]' : 'text-[#D4A855]'
             }`} />
           </div>
 
           {/* Content */}
-          <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
-          <p className="text-sm text-slate-400 leading-relaxed">{message}</p>
+          <h3 className="text-lg font-extrabold text-white mb-2">{title}</h3>
+          <p className="text-sm text-[#9CA3AF] leading-relaxed">{message}</p>
         </div>
 
         {/* Actions */}

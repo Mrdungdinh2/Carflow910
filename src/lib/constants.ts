@@ -53,24 +53,24 @@ export const ROUTE_SUGGESTIONS = [
 
 // ===== STATUS CONFIG =====
 export const STATUS_CONFIG: Record<RequestStatus, { label: string; color: string; bgColor: string }> = {
-  draft:           { label: 'Bản nháp',         color: 'text-slate-400',   bgColor: 'bg-slate-400/10' },
-  pending:         { label: 'Chờ TP duyệt',     color: 'text-amber-400',   bgColor: 'bg-amber-400/10' },
-  dept_approved:   { label: 'TP đã duyệt',      color: 'text-blue-400',    bgColor: 'bg-blue-400/10' },
-  tcth_approved:   { label: 'Chờ tài xế nhận',  color: 'text-cyan-400',    bgColor: 'bg-cyan-400/10' },
-  driver_accepted: { label: 'Đang thực hiện',   color: 'text-violet-400',  bgColor: 'bg-violet-400/10' },
-  completed:       { label: 'Hoàn thành',       color: 'text-emerald-400', bgColor: 'bg-emerald-400/10' },
-  bgd_approved:    { label: 'BGĐ đã duyệt',     color: 'text-emerald-400', bgColor: 'bg-emerald-400/10' },
-  rejected:        { label: 'Từ chối',           color: 'text-red-400',     bgColor: 'bg-red-400/10' },
+  draft:           { label: 'Bản nháp',         color: 'text-[#9CA3AF]',   bgColor: 'bg-[#9CA3AF]/10' },
+  pending:         { label: 'Chờ TP duyệt',     color: 'text-[#D4A855]',   bgColor: 'bg-[#D4A855]/10' },
+  dept_approved:   { label: 'TP đã duyệt',      color: 'text-white',       bgColor: 'bg-white/10' },
+  tcth_approved:   { label: 'Chờ tài xế nhận',  color: 'text-[#D4A855]',   bgColor: 'bg-[#D4A855]/10' },
+  driver_accepted: { label: 'Đang thực hiện',   color: 'text-white',       bgColor: 'bg-white/10' },
+  completed:       { label: 'Hoàn thành',       color: 'text-[#D4A855]',   bgColor: 'bg-[#D4A855]/10' },
+  bgd_approved:    { label: 'BGĐ đã duyệt',     color: 'text-[#D4A855]',   bgColor: 'bg-[#D4A855]/10' },
+  rejected:        { label: 'Từ chối',           color: 'text-[#9CA3AF]',   bgColor: 'bg-[#9CA3AF]/10' },
 };
 
 // ===== ROLE CONFIG =====
 export const ROLE_CONFIG: Record<UserRole, { label: string; color: string }> = {
-  staff:     { label: 'Nhân viên',      color: 'text-slate-400' },
-  dept_head: { label: 'Trưởng phòng',   color: 'text-blue-400' },
-  tcth:      { label: 'Phòng TCTH',     color: 'text-cyan-400' },
-  director:  { label: 'Ban Giám đốc',   color: 'text-amber-400' },
-  driver:    { label: 'Tài xế',         color: 'text-orange-400' },
-  admin:     { label: 'Quản trị viên', color: 'text-rose-400' },
+  staff:     { label: 'Nhân viên',      color: 'text-[#9CA3AF]' },
+  dept_head: { label: 'Trưởng phòng',   color: 'text-white' },
+  tcth:      { label: 'Phòng TCTH',     color: 'text-[#D4A855]' },
+  director:  { label: 'Ban Giám đốc',   color: 'text-[#D4A855]' },
+  driver:    { label: 'Tài xế',         color: 'text-white' },
+  admin:     { label: 'Quản trị viên', color: 'text-[#D4A855]' },
 };
 
 // ===== REJECTION REASONS =====
@@ -86,20 +86,20 @@ export const REJECTION_REASONS: Record<RejectionReason, string> = {
 
 // ===== VEHICLE STATUS CONFIG =====
 export const VEHICLE_STATUS_CONFIG: Record<VehicleStatus, { label: string; color: string }> = {
-  available:   { label: 'Sẵn sàng',   color: 'text-emerald-400' },
-  in_use:      { label: 'Đang dùng',  color: 'text-blue-400' },
-  reserved:    { label: 'Đang đợi',   color: 'text-purple-400' },
-  maintenance: { label: 'Bảo trì',    color: 'text-amber-400' },
-  retired:     { label: 'Thanh lý',    color: 'text-slate-500' },
+  available:   { label: 'Sẵn sàng',   color: 'text-[#D4A855]' },
+  in_use:      { label: 'Đang dùng',  color: 'text-white' },
+  reserved:    { label: 'Đang đợi',   color: 'text-[#9CA3AF]' },
+  maintenance: { label: 'Bảo trì',    color: 'text-[#9CA3AF]' },
+  retired:     { label: 'Thanh lý',    color: 'text-[#9CA3AF]' },
 };
 
 // ===== DRIVER STATUS CONFIG =====
 export const DRIVER_STATUS_CONFIG: Record<DriverStatus, { label: string; color: string }> = {
-  available:  { label: 'Sẵn sàng',   color: 'text-emerald-400' },
-  on_duty:    { label: 'Đang chạy',  color: 'text-blue-400' },
-  reserved:   { label: 'Đang đợi',   color: 'text-purple-400' },
-  day_off:    { label: 'Nghỉ phép',  color: 'text-amber-400' },
-  sick_leave: { label: 'Nghỉ ốm',   color: 'text-red-400' },
+  available:  { label: 'Sẵn sàng',   color: 'text-[#D4A855]' },
+  on_duty:    { label: 'Đang chạy',  color: 'text-white' },
+  reserved:   { label: 'Đang đợi',   color: 'text-[#9CA3AF]' },
+  day_off:    { label: 'Nghỉ phép',  color: 'text-[#9CA3AF]' },
+  sick_leave: { label: 'Nghỉ ốm',   color: 'text-[#9CA3AF]' },
 };
 
 // ===== BRANCH INFO =====

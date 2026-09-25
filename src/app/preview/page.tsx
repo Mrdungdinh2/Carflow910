@@ -70,7 +70,7 @@ function PreviewContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4A855] animate-spin" />
       </div>
     );
   }
@@ -80,7 +80,7 @@ function PreviewContent() {
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
         <div className="text-center">
           <h2 className="text-xl font-bold text-white mb-2">Không tìm thấy đề xuất</h2>
-          <p className="text-sm text-slate-400 mb-6">Đề xuất có thể đã bị xóa hoặc không tồn tại.</p>
+          <p className="text-sm text-[#9CA3AF] mb-6">Đề xuất có thể đã bị xóa hoặc không tồn tại.</p>
           <button onClick={() => router.push('/')} className="btn-primary">Quay lại trang chủ</button>
         </div>
       </div>
@@ -101,11 +101,11 @@ function PreviewContent() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
         <div className="text-center max-w-sm">
-          <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4 text-red-400 font-bold text-2xl">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4 text-[#D4A855] font-bold text-2xl">
             🔒
           </div>
           <h2 className="text-lg font-bold text-white mb-2">Không có quyền truy cập</h2>
-          <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+          <p className="text-xs text-[#9CA3AF] mb-6 leading-relaxed">
             Bạn không có quyền xem đề xuất của phòng ban khác ({request.department}). Chỉ Lãnh đạo {request.department}, Phòng TCTH và Ban Giám đốc mới có quyền xem.
           </p>
           <button onClick={() => router.push('/')} className="btn-primary w-full text-xs py-2.5">Quay lại trang chủ</button>
@@ -466,10 +466,10 @@ function PreviewContent() {
       {/* Header */}
       <header className="sticky top-0 z-20 bg-slate-900/80 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 -ml-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/[0.05]">
+          <button onClick={() => router.back()} className="p-2 -ml-2 text-[#9CA3AF] hover:text-white transition-colors rounded-lg hover:bg-white/[0.05]">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-semibold text-white">Xem trước biểu mẫu</h1>
+          <h1 className="text-lg font-extrabold text-white">Xem trước biểu mẫu</h1>
         </div>
       </header>
 
@@ -486,20 +486,20 @@ function PreviewContent() {
           <GlassCard className="p-4 border-orange-500/30 bg-orange-950/20">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-orange-400" />
+                <AlertTriangle className="w-5 h-5 text-[#D4A855]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-orange-300">
+                <p className="text-sm font-bold text-[#D4A855]">
                   ⚠️ Đề xuất này đã quá hạn!
                 </p>
-                <p className="text-xs text-orange-300/70 mt-1 leading-relaxed">
+                <p className="text-xs text-[#D4A855]/70 mt-1 leading-relaxed">
                   Ngày kết thúc dự kiến: <strong>{new Date(request.endDateTime).toLocaleDateString('vi-VN')}</strong> — đã qua nhưng {request.status === 'tcth_approved' ? 'tài xế chưa nhận nhiệm vụ' : 'chưa xác nhận hoàn thành'}.
                   Xe & tài xế đang bị khóa, không thể gán cho đề xuất mới.
                 </p>
                 {user && ['admin', 'tcth'].includes(user.role) && (
                   <button
                     onClick={() => setShowForceCompleteConfirm(true)}
-                    className="mt-3 px-4 py-2 rounded-xl text-xs font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 hover:bg-emerald-500/25 transition-all flex items-center gap-1.5"
+                    className="mt-3 px-4 py-2 rounded-xl text-xs font-bold text-[#D4A855] bg-emerald-500/15 border border-emerald-500/25 hover:bg-emerald-500/25 transition-all flex items-center gap-1.5"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     Xác nhận hoàn thành & Giải phóng xe/tài xế
@@ -515,31 +515,31 @@ function PreviewContent() {
       {(request.assignedVehicleId || request.assignedDriverId) && (
         <div className="max-w-4xl mx-auto px-4 mb-4">
           <GlassCard className="p-4">
-            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
               <span className="text-base">🚗</span> Thông tin xe & tài xế được gán
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {request.assignedVehicleId && (
                 <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Phương tiện</p>
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wider mb-1">Phương tiện</p>
+                  <p className="text-sm font-bold text-white">
                     {(() => { const v = getVehicles().find(v => v.id === request.assignedVehicleId); return v ? `${v.plateNumber} • ${v.model} (${v.seats} chỗ)` : request.assignedVehicleId; })()}
                   </p>
                 </div>
               )}
               {request.assignedDriverId && (
                 <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Tài xế</p>
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wider mb-1">Tài xế</p>
+                  <p className="text-sm font-bold text-white">
                     {(() => { const d = getDrivers().find(d => d.id === request.assignedDriverId); return d ? `${d.name} • ${d.phone}` : request.assignedDriverId; })()}
                   </p>
                   <p className="text-xs mt-1">
                     {request.status === 'tcth_approved' ? (
-                      <span className="text-amber-400 font-semibold">⏳ Chờ tài xế nhận nhiệm vụ</span>
+                      <span className="text-[#D4A855] font-bold">⏳ Chờ tài xế nhận nhiệm vụ</span>
                     ) : request.status === 'driver_accepted' ? (
-                      <span className="text-violet-400 font-semibold">🚀 Tài xế đã nhận - Đang thực hiện</span>
+                      <span className="text-[#D4A855] font-bold">🚀 Tài xế đã nhận - Đang thực hiện</span>
                     ) : request.status === 'completed' ? (
-                      <span className="text-emerald-400 font-semibold">✅ Đã hoàn thành</span>
+                      <span className="text-[#D4A855] font-bold">✅ Đã hoàn thành</span>
                     ) : null}
                   </p>
                 </div>
@@ -553,7 +553,7 @@ function PreviewContent() {
       {request.approvalHistory && request.approvalHistory.length > 0 && (
         <div className="max-w-4xl mx-auto px-4 mb-4">
           <GlassCard className="p-4">
-            <h3 className="text-sm font-semibold text-white mb-4">Lịch sử phê duyệt</h3>
+            <h3 className="text-sm font-bold text-white mb-4">Lịch sử phê duyệt</h3>
             <ApprovalTimeline history={request.approvalHistory} currentStatus={request.status} />
           </GlassCard>
         </div>
@@ -566,36 +566,36 @@ function PreviewContent() {
           <div className="relative w-full sm:max-w-lg bg-[#121929]/95 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl animate-slide-up max-h-[85vh] flex flex-col overflow-hidden my-auto">
             <div className="p-4 border-b border-white/[0.06]">
               <h3 className="text-base font-bold text-white">Gán xe & tài xế</h3>
-              <p className="text-xs text-slate-400 mt-1">Chọn xe và tài xế cho chuyến công tác</p>
+              <p className="text-xs text-[#9CA3AF] mt-1">Chọn xe và tài xế cho chuyến công tác</p>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {/* Tổng quan trạng thái đội xe */}
               {blockedInfo && (blockedInfo.busyVehicles > 0 || blockedInfo.maintVehicles > 0 || blockedInfo.busyDrivers > 0 || blockedInfo.offDrivers > 0) && (
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 space-y-2">
-                  <p className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">⚠️ Tình trạng tài nguyên hiện tại</p>
+                  <p className="text-xs font-bold text-[#D4A855] flex items-center gap-1.5">⚠️ Tình trạng tài nguyên hiện tại</p>
                   <div className="flex flex-wrap gap-1.5">
                     {blockedInfo.busyVehicles > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/20 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-[#D4A855] border border-red-500/20 font-bold">
                         🚗 {blockedInfo.busyVehicles} xe đang thực hiện
                       </span>
                     )}
                     {blockedInfo.maintVehicles > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/20 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-[#D4A855] border border-orange-500/20 font-bold">
                         🔧 {blockedInfo.maintVehicles} xe bảo trì
                       </span>
                     )}
                     {blockedInfo.retiredVehicles > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-300 border border-slate-500/20 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-500/20 text-white border border-slate-500/20 font-bold">
                         ⛔ {blockedInfo.retiredVehicles} xe ngừng sử dụng
                       </span>
                     )}
                     {blockedInfo.busyDrivers > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/20 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-[#D4A855] border border-violet-500/20 font-bold">
                         👨‍✈️ {blockedInfo.busyDrivers} tài xế đang chạy
                       </span>
                     )}
                     {blockedInfo.offDrivers > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-300 border border-slate-500/20 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-500/20 text-white border border-slate-500/20 font-bold">
                         🏠 {blockedInfo.offDrivers} tài xế nghỉ phép
                       </span>
                     )}
@@ -605,13 +605,13 @@ function PreviewContent() {
 
               {/* Danh sách xe sẵn sàng */}
               <div>
-                <p className="text-sm font-medium text-slate-300 mb-2">
+                <p className="text-sm font-bold text-white mb-2">
                   🚗 Xe sẵn sàng ({availableVehicles.length}{blockedInfo ? `/${blockedInfo.totalVehicles}` : ''})
                 </p>
                 {availableVehicles.length === 0 ? (
                   <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center">
-                    <p className="text-sm font-semibold text-red-300 mb-1">⚠ Không có xe nào sẵn sàng!</p>
-                    <p className="text-[11px] text-red-300/70">
+                    <p className="text-sm font-bold text-[#D4A855] mb-1">⚠ Không có xe nào sẵn sàng!</p>
+                    <p className="text-[11px] text-[#D4A855]/70">
                       Tất cả xe đang ở trạng thái bận (đang thực hiện / bảo trì / ngừng hoạt động).
                       Vui lòng chờ xe hoàn thành chuyến hoặc từ chối đề xuất.
                     </p>
@@ -627,13 +627,13 @@ function PreviewContent() {
 
               {/* Danh sách tài xế sẵn sàng */}
               <div>
-                <p className="text-sm font-medium text-slate-300 mb-2">
+                <p className="text-sm font-bold text-white mb-2">
                   👨‍✈️ Tài xế sẵn sàng ({availableDrivers.length}{blockedInfo ? `/${blockedInfo.totalDrivers}` : ''})
                 </p>
                 {availableDrivers.length === 0 ? (
                   <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center">
-                    <p className="text-sm font-semibold text-red-300 mb-1">⚠ Không có tài xế nào sẵn sàng!</p>
-                    <p className="text-[11px] text-red-300/70">
+                    <p className="text-sm font-bold text-[#D4A855] mb-1">⚠ Không có tài xế nào sẵn sàng!</p>
+                    <p className="text-[11px] text-[#D4A855]/70">
                       Tất cả tài xế đang bận (đang thực hiện / nghỉ phép / nghỉ ốm).
                       Vui lòng chờ tài xế hoàn thành chuyến hoặc từ chối đề xuất.
                     </p>
@@ -666,7 +666,7 @@ function PreviewContent() {
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>
         <div className="max-w-4xl mx-auto space-y-2">
           {user?.role === 'director' && (
-            <div className="text-center text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 py-1.5 px-3 rounded-xl font-medium mb-1">
+            <div className="text-center text-xs text-[#D4A855] bg-amber-500/10 border border-amber-500/20 py-1.5 px-3 rounded-xl font-bold mb-1">
               👁️ Ban Giám đốc — Quyền giám sát (Chỉ xem)
             </div>
           )}
@@ -710,7 +710,7 @@ function PreviewContent() {
             </div>
           )}
           {canDriverAccept() && (
-            <button onClick={handleDriverAccept} className="w-full py-3.5 rounded-xl font-semibold text-white bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition-all flex items-center justify-center gap-2">
+            <button onClick={handleDriverAccept} className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 transition-all flex items-center justify-center gap-2">
               <PlayCircle className="w-5 h-5" />
               Nhận nhiệm vụ
             </button>
@@ -719,20 +719,20 @@ function PreviewContent() {
           {/* [Fix D] Cảnh báo TX đang bận */}
           {user?.role === 'driver' && request.status === 'tcth_approved' && request.assignedDriverId === user.id && isDriverBusy() && (
             <div className="w-full py-3 px-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
-              <p className="text-xs font-semibold text-amber-300">⚠️ Bạn đang thực hiện nhiệm vụ khác</p>
-              <p className="text-[10px] text-amber-300/60 mt-0.5">Hoàn thành nhiệm vụ hiện tại trước khi nhận nhiệm vụ mới</p>
+              <p className="text-xs font-bold text-[#D4A855]">⚠️ Bạn đang thực hiện nhiệm vụ khác</p>
+              <p className="text-[10px] text-[#D4A855]/60 mt-0.5">Hoàn thành nhiệm vụ hiện tại trước khi nhận nhiệm vụ mới</p>
             </div>
           )}
 
           {isFutureTripForDriver() && (
             <div className="w-full py-3 px-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
-              <p className="text-xs font-semibold text-purple-300">🗓️ Chuyến này vào ngày {new Date(request.startDateTime).toLocaleDateString('vi-VN')}</p>
+              <p className="text-xs font-bold text-purple-300">🗓️ Chuyến này vào ngày {new Date(request.startDateTime).toLocaleDateString('vi-VN')}</p>
               <p className="text-[10px] text-purple-300/60 mt-0.5">Bạn chỉ có thể nhận nhiệm vụ khi đến đúng ngày công tác</p>
             </div>
           )}
 
           {canDriverComplete() && (
-            <button onClick={handleDriverComplete} className="w-full py-3.5 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 transition-all flex items-center justify-center gap-2">
+            <button onClick={handleDriverComplete} className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 transition-all flex items-center justify-center gap-2">
               <CheckCircle2 className="w-5 h-5" />
               Xác nhận hoàn thành
             </button>
@@ -777,11 +777,11 @@ function PreviewContent() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#090d16]/90 backdrop-blur-xl p-4 overflow-y-auto">
           <GlassCard className="w-full max-w-sm max-h-[85vh] overflow-y-auto p-6 animate-scale-in my-auto bg-[#121929] rounded-3xl border border-white/10">
             <h3 className="text-lg font-bold text-white mb-1">Xác nhận hoàn thành chuyến</h3>
-            <p className="text-xs text-slate-400 mb-5">Nhập chỉ số công tơ mét (ODO) để hoàn tất</p>
+            <p className="text-xs text-[#9CA3AF] mb-5">Nhập chỉ số công tơ mét (ODO) để hoàn tất</p>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">ODO lúc xuất phát (km)</label>
+                <label className="text-xs text-[#9CA3AF] block mb-1">ODO lúc xuất phát (km)</label>
                 <input
                   type="number"
                   value={odoStart}
@@ -791,7 +791,7 @@ function PreviewContent() {
                 />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">ODO lúc về (km) <span className="text-red-400">*</span></label>
+                <label className="text-xs text-[#9CA3AF] block mb-1">ODO lúc về (km) <span className="text-[#D4A855]">*</span></label>
                 <input
                   type="number"
                   value={odoEnd}
@@ -802,8 +802,8 @@ function PreviewContent() {
               </div>
               {odoStart && odoEnd && parseInt(odoEnd) > parseInt(odoStart) && (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
-                  <p className="text-xs text-slate-400">Quãng đường</p>
-                  <p className="text-lg font-bold text-emerald-400">{(parseInt(odoEnd) - parseInt(odoStart)).toLocaleString()} km</p>
+                  <p className="text-xs text-[#9CA3AF]">Quãng đường</p>
+                  <p className="text-lg font-bold text-[#D4A855]">{(parseInt(odoEnd) - parseInt(odoStart)).toLocaleString()} km</p>
                 </div>
               )}
             </div>
@@ -811,13 +811,13 @@ function PreviewContent() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowOdoModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:bg-white/5 transition-all text-sm"
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-[#9CA3AF] hover:bg-white/5 transition-all text-sm"
               >
                 Hủy
               </button>
               <button
                 onClick={confirmDriverComplete}
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold hover:from-emerald-500 hover:to-green-500 transition-all text-sm"
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold hover:from-emerald-500 hover:to-green-500 transition-all text-sm"
               >
                 Hoàn thành
               </button>
@@ -833,7 +833,7 @@ export default function PreviewPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4A855] animate-spin" />
       </div>
     }>
       <PreviewContent />

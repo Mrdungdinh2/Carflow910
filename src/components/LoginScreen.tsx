@@ -50,7 +50,7 @@ export default function LoginScreen() {
             <div className="relative flex items-center justify-center mb-3 group">
               <div className="absolute inset-0 bg-gradient-to-tr from-[#f4c3af]/40 via-cyan-500/30 to-purple-600/30 rounded-3xl blur-2xl group-hover:blur-3xl transition-all" />
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#1c263b] via-[#121929] to-[#090d16] border border-[#f4c3af]/50 shadow-2xl flex items-center justify-center relative z-10 group-hover:scale-105 transition-transform duration-300">
-                <Car className="w-9 h-9 text-[#f4c3af] drop-shadow-[0_0_12px_rgba(244,195,175,0.7)]" />
+                <Car className="w-9 h-9 text-[#D4A855] drop-shadow-[0_0_12px_rgba(244,195,175,0.7)]" />
               </div>
             </div>
 
@@ -61,19 +61,19 @@ export default function LoginScreen() {
 
             {/* Tagline PREMIUM */}
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#f4c3af] bg-[#f4c3af]/10 border border-[#f4c3af]/30 px-3 py-0.5 rounded-full shadow-inner">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#D4A855] bg-[#f4c3af]/10 border border-[#f4c3af]/30 px-3 py-0.5 rounded-full shadow-inner">
                 CHI NHÁNH NAM SÀI GÒN
               </span>
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold tracking-tight text-white mt-4">
-            CarFlow<span className="text-[#f4c3af]">910</span>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white mt-4">
+            CarFlow<span className="text-[#D4A855]">910</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1 font-medium">
+          <p className="text-xs text-[#9CA3AF] mt-1 font-medium">
             Hệ thống Đăng ký &amp; Quản lý điều xe công tác
           </p>
-          <p className="text-xs text-slate-400 font-medium">
+          <p className="text-xs text-[#9CA3AF] font-medium">
             Chi nhánh Nam Sài Gòn
           </p>
         </div>
@@ -83,7 +83,7 @@ export default function LoginScreen() {
           <GlassCard className="p-6 md:p-8 border-white/10 shadow-2xl relative bg-[#121929]/80 backdrop-blur-2xl rounded-3xl">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Tên đăng nhập</label>
+                <label className="text-xs font-bold text-white">Tên đăng nhập</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -98,7 +98,7 @@ export default function LoginScreen() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Mật khẩu</label>
+                <label className="text-xs font-bold text-white">Mật khẩu</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -111,7 +111,7 @@ export default function LoginScreen() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-white transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -119,7 +119,7 @@ export default function LoginScreen() {
               </div>
 
               {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs text-center font-medium animate-in fade-in">
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-[#D4A855] text-xs text-center font-bold animate-in fade-in">
                   {error}
                 </div>
               )}
@@ -145,8 +145,8 @@ export default function LoginScreen() {
       </div>
 
       {/* Security badge footer */}
-      <div className="pb-6 text-center text-[10px] text-slate-500 flex items-center justify-center gap-1.5 relative z-10">
-        <ShieldCheck className="w-3.5 h-3.5 text-[#f4c3af]" />
+      <div className="pb-6 text-center text-[10px] text-[#9CA3AF] flex items-center justify-center gap-1.5 relative z-10">
+        <ShieldCheck className="w-3.5 h-3.5 text-[#D4A855]" />
         Bảo mật 256-bit SSL • VietinBank Chi nhánh Nam Sài Gòn
       </div>
     </div>

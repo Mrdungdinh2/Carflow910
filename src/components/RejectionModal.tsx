@@ -39,26 +39,26 @@ export function RejectionModal({ isOpen, onReject, onCancel }: RejectionModalPro
         <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4 text-red-400" />
+              <AlertTriangle className="w-4 h-4 text-[#D4A855]" />
             </div>
-            <h3 className="text-base font-bold text-white">Từ chối đề xuất</h3>
+            <h3 className="text-base font-extrabold text-white">Từ chối đề xuất</h3>
           </div>
-          <button onClick={onCancel} className="p-1.5 rounded-full text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors">
+          <button onClick={onCancel} className="p-1.5 rounded-full text-[#9CA3AF] hover:text-white hover:bg-white/[0.06] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Reasons */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          <p className="text-xs text-slate-400 mb-3">Chọn lý do từ chối:</p>
+          <p className="text-xs font-bold text-[#9CA3AF] mb-3">Chọn lý do từ chối:</p>
           {REASONS.map((r) => (
             <button
               key={r.key}
               onClick={() => setSelectedReason(r.key)}
               className={`w-full text-left px-3.5 py-2.5 rounded-xl border text-sm transition-all ${
                 selectedReason === r.key
-                  ? 'border-red-500/30 bg-red-500/[0.08] text-red-300'
-                  : 'border-white/[0.06] bg-white/[0.02] text-slate-300 hover:bg-white/[0.04]'
+                  ? 'border-red-500/30 bg-red-500/[0.08] text-[#D4A855]'
+                  : 'border-white/[0.06] bg-white/[0.02] text-white hover:bg-white/[0.04]'
               }`}
             >
               {r.label}
@@ -67,7 +67,7 @@ export function RejectionModal({ isOpen, onReject, onCancel }: RejectionModalPro
 
           {/* Detail input (shown for 'other' or always) */}
           <div className="mt-3">
-            <label className="text-xs text-slate-400 mb-1 block">Ghi chú thêm (tùy chọn)</label>
+            <label className="text-xs font-bold text-[#9CA3AF] mb-1 block">Ghi chú thêm (tùy chọn)</label>
             <textarea
               value={detail}
               onChange={(e) => setDetail(e.target.value)}

@@ -84,9 +84,9 @@ function SectionHeader({ index }: { index: number }) {
   return (
     <div className="flex items-center gap-3 mb-4">
       <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-cyan-400" />
+        <Icon className="w-4 h-4 text-[#D4A855]" />
       </div>
-      <h2 className="text-base font-semibold text-white">{section.title}</h2>
+      <h2 className="text-base font-bold text-white">{section.title}</h2>
     </div>
   );
 }
@@ -231,7 +231,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
           <SectionHeader index={0} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="form-label">Họ và tên <span className="text-red-400">*</span></label>
+              <label className="form-label">Họ và tên <span className="text-[#D4A855]">*</span></label>
               <input
                 type="text"
                 required
@@ -242,7 +242,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
               />
             </div>
             <div className="space-y-1.5">
-              <label className="form-label">Phòng/Ban <span className="text-red-400">*</span></label>
+              <label className="form-label">Phòng/Ban <span className="text-[#D4A855]">*</span></label>
               {user?.role === 'admin' ? (
                 <select
                   required
@@ -261,10 +261,10 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
                   readOnly
                   required
                   value={effectiveDept}
-                  className="glass-input w-full bg-white/[0.04] text-cyan-300 font-semibold cursor-not-allowed"
+                  className="glass-input w-full bg-white/[0.04] text-[#D4A855] font-semibold cursor-not-allowed"
                 />
               )}
-              <span className="text-[10px] text-cyan-400 font-medium block mt-1">✓ Đã tự động gán theo phòng ban của tài khoản</span>
+              <span className="text-[10px] text-[#D4A855] font-bold block mt-1">✓ Đã tự động gán theo phòng ban của tài khoản</span>
             </div>
           </div>
         </GlassCard>
@@ -274,7 +274,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
           <SectionHeader index={1} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
             <div className="space-y-1.5 max-w-[200px]">
-              <label className="form-label">Số lượng xe <span className="text-red-400">*</span></label>
+              <label className="form-label">Số lượng xe <span className="text-[#D4A855]">*</span></label>
               <input
                 type="number"
                 min="1"
@@ -296,15 +296,15 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
                   </span>
                   Tình hình xe & tài xế hiện tại
                 </span>
-                <Link href="/fleet" className="text-[10px] text-cyan-400 hover:underline font-semibold flex items-center gap-0.5">
+                <Link href="/fleet" className="text-[10px] text-[#D4A855] hover:underline font-semibold flex items-center gap-0.5">
                   Xem chi tiết <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <span className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-semibold text-[11px]">
+                <span className="bg-emerald-500/10 text-[#D4A855] border border-emerald-500/20 px-2.5 py-1 rounded-lg font-semibold text-[11px]">
                   🚗 {fleetStats.availableVehicles}/{fleetStats.totalVehicles} Xe sẵn sàng
                 </span>
-                <span className="bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 px-2.5 py-1 rounded-lg font-semibold text-[11px]">
+                <span className="bg-cyan-500/10 text-[#D4A855] border border-cyan-500/20 px-2.5 py-1 rounded-lg font-semibold text-[11px]">
                   👨‍✈️ {fleetStats.availableDrivers}/{fleetStats.totalDrivers} Tài xế sẵn sàng
                 </span>
               </div>
@@ -341,7 +341,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
 
           {/* Quick Preset Buttons */}
           <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-white/[0.06]">
-            <span className="text-xs text-slate-400 font-medium">Chọn nhanh thời lượng công tác:</span>
+            <span className="text-xs text-[#9CA3AF] font-medium">Chọn nhanh thời lượng công tác:</span>
             <button
               type="button"
               onClick={() => {
@@ -349,7 +349,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
                 setEndDateTime(newEnd);
                 validateTimes(startDateTime, newEnd);
               }}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-white hover:text-[#D4A855] border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               ⚡ +2 giờ
             </button>
@@ -360,7 +360,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
                 setEndDateTime(newEnd);
                 validateTimes(startDateTime, newEnd);
               }}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-white hover:text-[#D4A855] border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               ⚡ +4 giờ
             </button>
@@ -371,7 +371,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
                 setEndDateTime(newEnd);
                 validateTimes(startDateTime, newEnd);
               }}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-white hover:text-[#D4A855] border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               🕒 Đến 17:00 (Hết giờ làm)
             </button>
@@ -389,7 +389,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
                 validateDateRange(newStart);
                 validateTimes(newStart, newEnd);
               }}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/[0.06] hover:bg-cyan-500/20 text-white hover:text-[#D4A855] border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               📅 Cả ngày (08:00 - 17:00)
             </button>
@@ -401,7 +401,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
           <SectionHeader index={4} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="form-label">Điểm đón <span className="text-red-400">*</span></label>
+              <label className="form-label">Điểm đón <span className="text-[#D4A855]">*</span></label>
               <input
                 type="text"
                 required
@@ -418,7 +418,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
               </datalist>
             </div>
             <div className="space-y-1.5">
-              <label className="form-label">Nơi đến <span className="text-red-400">*</span></label>
+              <label className="form-label">Nơi đến <span className="text-[#D4A855]">*</span></label>
               <input
                 type="text"
                 required
@@ -441,7 +441,7 @@ export default function RequestForm({ initialData, onSubmit, onPreview }: Reques
         <GlassCard className="p-4 sm:p-5">
           <SectionHeader index={5} />
           <div className="space-y-1.5">
-            <label className="form-label">Mô tả chi tiết <span className="text-red-400">*</span></label>
+            <label className="form-label">Mô tả chi tiết <span className="text-[#D4A855]">*</span></label>
             <textarea
               required
               value={reason}

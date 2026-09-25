@@ -20,11 +20,11 @@ const ACTION_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ACTION_COLORS: Record<string, string> = {
-  submit: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  approve: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-  reject: 'text-red-400 bg-red-400/10 border-red-400/20',
-  assign_vehicle: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
-  return: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+  submit: 'text-[#D4A855] bg-blue-400/10 border-blue-400/20',
+  approve: 'text-[#D4A855] bg-emerald-400/10 border-emerald-400/20',
+  reject: 'text-[#D4A855] bg-red-400/10 border-red-400/20',
+  assign_vehicle: 'text-[#D4A855] bg-cyan-400/10 border-cyan-400/20',
+  return: 'text-[#D4A855] bg-amber-400/10 border-amber-400/20',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -47,8 +47,8 @@ export function ApprovalTimeline({ history, currentStatus }: ApprovalTimelinePro
   if (!history || history.length === 0) {
     return (
       <div className="text-center py-6">
-        <Clock className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-        <p className="text-xs text-slate-500">Chưa có lịch sử duyệt</p>
+        <Clock className="w-8 h-8 text-[#9CA3AF] mx-auto mb-2" />
+        <p className="text-xs text-[#9CA3AF]">Chưa có lịch sử duyệt</p>
       </div>
     );
   }
@@ -74,21 +74,21 @@ export function ApprovalTimeline({ history, currentStatus }: ApprovalTimelinePro
               {/* Content */}
               <div className={`ml-2 ${isLast ? '' : 'pb-1'}`}>
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-sm font-medium text-white">
+                  <span className="text-sm font-bold text-white">
                     {ACTION_LABELS[entry.action] || entry.action}
                   </span>
-                  <span className="text-[10px] text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] text-[#9CA3AF] bg-white/[0.04] px-1.5 py-0.5 rounded">
                     {roleLabel}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#9CA3AF]">
                   {entry.byName} • {formatDateTime(entry.timestamp)}
                 </p>
                 {entry.note && (
-                  <p className="text-xs text-slate-400 mt-1 italic">&quot;{entry.note}&quot;</p>
+                  <p className="text-xs text-[#9CA3AF] mt-1 italic">&quot;{entry.note}&quot;</p>
                 )}
                 {entry.rejectionReason && (
-                  <p className="text-xs text-red-400 mt-1">
+                  <p className="text-xs text-[#D4A855] mt-1">
                     {REJECTION_REASONS[entry.rejectionReason as RejectionReason] || entry.rejectionReason}
                     {entry.rejectionDetail && `: ${entry.rejectionDetail}`}
                   </p>

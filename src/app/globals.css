@@ -18,6 +18,10 @@
     --glass-hover: rgba(255, 255, 255, 0.12);
     --bottom-nav-height: 4.5rem;
     --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    /* ══ 3-Color Text Palette ══ */
+    --text-primary: #FFFFFF;    /* Trắng — tiêu đề, nội dung chính */
+    --text-accent: #D4A855;     /* Vàng đồng — accent, highlight */
+    --text-muted: #9CA3AF;      /* Xám nhạt — mô tả, nhãn phụ */
   }
 
   * {
@@ -55,15 +59,15 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(244, 195, 175, 0.2);
+    background: rgba(212, 168, 85, 0.25);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(244, 195, 175, 0.4);
+    background: rgba(212, 168, 85, 0.45);
   }
 
   ::selection {
-    background: rgba(244, 195, 175, 0.3);
+    background: rgba(212, 168, 85, 0.3);
     color: white;
   }
 }
@@ -88,8 +92,8 @@
 
 .glass-input:focus {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(244, 195, 175, 0.6);
-  box-shadow: 0 0 20px rgba(244, 195, 175, 0.15);
+  border-color: rgba(212, 168, 85, 0.6);
+  box-shadow: 0 0 20px rgba(212, 168, 85, 0.15);
 }
 
 /* Calendar/datetime icon — làm nổi bật trên nền tối */
@@ -127,8 +131,8 @@
 
 .glass-select:focus {
   background-color: rgba(255, 255, 255, 0.08);
-  border-color: rgba(244, 195, 175, 0.6);
-  box-shadow: 0 0 20px rgba(244, 195, 175, 0.15);
+  border-color: rgba(212, 168, 85, 0.6);
+  box-shadow: 0 0 20px rgba(212, 168, 85, 0.15);
 }
 
 .glass-select option {
@@ -161,16 +165,16 @@
   padding: 0.85rem 1.75rem;
   border-radius: 1rem;
   font-weight: 600;
-  color: #f4c3af;
+  color: #D4A855;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(244, 195, 175, 0.25);
+  border: 1px solid rgba(212, 168, 85, 0.25);
   transition: all 0.25s ease;
   min-height: 48px;
   cursor: pointer;
 }
 .btn-secondary:hover {
-  background: rgba(244, 195, 175, 0.1);
-  border-color: rgba(244, 195, 175, 0.4);
+  background: rgba(212, 168, 85, 0.1);
+  border-color: rgba(212, 168, 85, 0.4);
 }
 .btn-secondary:active {
   transform: scale(0.98);
@@ -228,8 +232,8 @@
 }
 
 .premium-card:hover {
-  border-color: rgba(244, 195, 175, 0.25);
-  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(244, 195, 175, 0.05);
+  border-color: rgba(212, 168, 85, 0.25);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(212, 168, 85, 0.05);
 }
 
 /* Animations */

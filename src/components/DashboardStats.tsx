@@ -22,7 +22,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       label: 'Tổng yêu cầu',
       value: stats.total,
       icon: FileText,
-      iconColor: 'text-cyan-400',
+      iconColor: 'text-[#D4A855]',
       glowColor: 'shadow-cyan-500/10',
     },
     {
@@ -30,7 +30,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       label: 'Chờ duyệt',
       value: stats.pending,
       icon: Clock,
-      iconColor: 'text-amber-400',
+      iconColor: 'text-[#D4A855]',
       glowColor: 'shadow-amber-500/10',
     },
     {
@@ -38,7 +38,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       label: 'Đã duyệt',
       value: stats.approved,
       icon: CheckCircle2,
-      iconColor: 'text-emerald-400',
+      iconColor: 'text-[#D4A855]',
       glowColor: 'shadow-emerald-500/10',
     },
     {
@@ -46,7 +46,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       label: 'Từ chối',
       value: stats.rejected,
       icon: XCircle,
-      iconColor: 'text-red-400',
+      iconColor: 'text-[#D4A855]',
       glowColor: 'shadow-red-500/10',
     },
     {
@@ -54,7 +54,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       label: 'Hoàn thành',
       value: stats.completed,
       icon: CheckCircle2,
-      iconColor: 'text-emerald-500',
+      iconColor: 'text-[#D4A855]',
       glowColor: 'shadow-emerald-500/10',
     },
   ];
@@ -66,7 +66,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
         return (
           <GlassCard key={item.id} className={`p-4 ${item.glowColor}`}>
             <div className="flex justify-between items-start mb-2">
-              <span className="text-xs text-slate-400 font-medium">{item.label}</span>
+              <span className="text-xs text-[#9CA3AF] font-medium">{item.label}</span>
               <div className={`w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center`}>
                 <Icon className={`w-4 h-4 ${item.iconColor}`} />
               </div>

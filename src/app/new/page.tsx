@@ -57,7 +57,7 @@ function NewRequestContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4A855] animate-spin" />
       </div>
     );
   }
@@ -69,11 +69,11 @@ function NewRequestContent() {
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
           <Link
             href="/"
-            className="p-2 -ml-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/[0.05]"
+            className="p-2 -ml-2 text-[#9CA3AF] hover:text-white transition-colors rounded-lg hover:bg-white/[0.05]"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-lg font-semibold text-white">
+          <h1 className="text-lg font-extrabold text-white">
             {editId ? 'Chỉnh sửa đề xuất' : 'Tạo đề xuất điều xe'}
           </h1>
         </div>
@@ -96,7 +96,7 @@ export default function NewRequestPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-[#D4A855] animate-spin" />
         </div>
       }
     >

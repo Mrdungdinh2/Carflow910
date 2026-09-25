@@ -27,7 +27,7 @@ export function DriverCard({
   onViewHistory,
 }: DriverCardProps) {
   const runtimeStatus = getDriverCurrentStatus(driver.id, requests);
-  const statusCfg = DRIVER_STATUS_CONFIG[runtimeStatus] || DRIVER_STATUS_CONFIG[driver.status] || { label: 'Sẵn sàng', color: 'text-emerald-400' };
+  const statusCfg = DRIVER_STATUS_CONFIG[runtimeStatus] || DRIVER_STATUS_CONFIG[driver.status] || { label: 'Sẵn sàng', color: 'text-[#D4A855]' };
 
   // If stats prop not provided, fetch live stats
   const driverStats = propStats || getDriverStats(driver.id);
@@ -46,7 +46,7 @@ export function DriverCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center shrink-0">
-            <User className="w-5 h-5 text-cyan-400" />
+            <User className="w-5 h-5 text-[#D4A855]" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -57,12 +57,12 @@ export function DriverCard({
             </div>
 
             <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span className="flex items-center gap-1 text-xs text-slate-300 font-mono">
-                <Phone className="w-3 h-3 text-emerald-400" />
+              <span className="flex items-center gap-1 text-xs text-white font-mono">
+                <Phone className="w-3 h-3 text-[#D4A855]" />
                 {driver.phone}
               </span>
-              <span className="flex items-center gap-1 text-xs text-slate-400">
-                <CreditCard className="w-3 h-3 text-purple-400" />
+              <span className="flex items-center gap-1 text-xs text-[#9CA3AF]">
+                <CreditCard className="w-3 h-3 text-[#D4A855]" />
                 Hạng {driver.licenseClass}
               </span>
             </div>
@@ -75,13 +75,13 @@ export function DriverCard({
                   e.stopPropagation();
                   onViewHistory?.(driver);
                 }}
-                className="flex items-center gap-1 text-[11px] font-semibold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-xl hover:bg-cyan-500/20 transition-all"
+                className="flex items-center gap-1 text-[11px] font-semibold text-[#D4A855] bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-xl hover:bg-cyan-500/20 transition-all"
                 title="Bấm để xem lịch sử chuyến đi"
               >
-                <Award className="w-3.5 h-3.5 text-cyan-400" />
+                <Award className="w-3.5 h-3.5 text-[#D4A855]" />
                 <span>{driverStats.completedTrips} chuyến xong</span>
                 {driverStats.activeTrips > 0 && (
-                  <span className="text-[10px] text-amber-400 font-normal">({driverStats.activeTrips} đang chạy)</span>
+                  <span className="text-[10px] text-[#D4A855] font-normal">({driverStats.activeTrips} đang chạy)</span>
                 )}
               </button>
             </div>
@@ -96,7 +96,7 @@ export function DriverCard({
               e.stopPropagation();
               onEditPhone(driver);
             }}
-            className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all shrink-0"
+            className="p-2 text-[#9CA3AF] hover:text-[#D4A855] hover:bg-emerald-500/10 rounded-xl transition-all shrink-0"
             title="Sửa số điện thoại / thông tin tài xế"
           >
             <Pencil className="w-4 h-4" />

@@ -32,23 +32,23 @@ export function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
           
           <div className="flex items-start gap-4 mb-5">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0 shadow-lg">
-              <LogOut className="w-6 h-6 text-rose-400" />
+              <LogOut className="w-6 h-6 text-[#D4A855]" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Xác nhận đăng xuất</h3>
-              <p className="text-xs text-[#f4c3af] mt-0.5 font-medium">VietinBank Chi nhánh Nam Sài Gòn</p>
+              <h3 className="text-lg font-extrabold text-white tracking-tight">Xác nhận đăng xuất</h3>
+              <p className="text-xs text-[#D4A855] mt-0.5 font-bold">VietinBank Chi nhánh Nam Sài Gòn</p>
             </div>
           </div>
 
           {/* User info summary box */}
           <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-3.5 mb-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#f4c3af]/20 border border-[#f4c3af]/30 flex items-center justify-center text-[#f4c3af] font-bold text-sm">
+              <div className="w-10 h-10 rounded-full bg-[#f4c3af]/20 border border-[#f4c3af]/30 flex items-center justify-center text-[#D4A855] font-bold text-sm">
                 {user.name.charAt(0)}
               </div>
               <div>
                 <p className="text-sm font-bold text-white">{user.name}</p>
-                <p className="text-[10px] text-slate-400">{user.department || 'Ban điều hành'}</p>
+                <p className="text-[10px] text-[#9CA3AF]">{user.department || 'Ban điều hành'}</p>
               </div>
             </div>
             {roleCfg && (
@@ -58,14 +58,14 @@ export function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
             )}
           </div>
 
-          <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+          <p className="text-xs text-white mb-6 leading-relaxed">
             Bạn có chắc chắn muốn kết thúc phiên làm việc hiện tại trên hệ thống CarFlow910?
           </p>
 
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="flex-1 py-3 px-4 rounded-2xl bg-white/[0.06] hover:bg-white/10 border border-white/10 text-slate-300 text-xs font-semibold transition-all cursor-pointer"
+              className="flex-1 py-3 px-4 rounded-2xl bg-white/[0.06] hover:bg-white/10 border border-white/10 text-white text-xs font-bold transition-all cursor-pointer"
             >
               Hủy bỏ
             </button>
